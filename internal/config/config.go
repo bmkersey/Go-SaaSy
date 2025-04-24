@@ -9,9 +9,9 @@ import (
 )
 
 type Config struct {
-	db        string
-	jwtSecret string
-	port      string
+	DB        string
+	JwtSecret string
+	Port      string
 }
 
 func LoadConfig() Config {
@@ -22,12 +22,12 @@ func LoadConfig() Config {
 	}
 
 	cfg := Config{
-		db:        getEnv("DB_URL", ""),
-		port:      getEnv("PORT", "8080"),
-		jwtSecret: getEnv("JWT_SECRET", ""),
+		DB:        getEnv("DB_URL", ""),
+		Port:      getEnv("PORT", "8080"),
+		JwtSecret: getEnv("JWT_SECRET", ""),
 	}
 
-	if cfg.db == "" || cfg.jwtSecret == "" {
+	if cfg.DB == "" || cfg.JwtSecret == "" {
 		log.Fatal("Missing env variables. Check .env")
 	}
 
