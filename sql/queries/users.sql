@@ -5,7 +5,7 @@ VALUES (
   $2,
   $3
 )
-RETURNING id, email, created_at, updated_at;
+RETURNING *;
 
 
 -- name: GetUserByEmail :one

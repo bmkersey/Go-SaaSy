@@ -7,7 +7,6 @@ package db
 
 import (
 	"context"
-	"database/sql"
 
 	"github.com/google/uuid"
 )
@@ -19,7 +18,7 @@ VALUES (
   $2,
   $3
 )
-RETURNING id, email, created_at, updated_at
+RETURNING id, email, password_hash, created_at, updated_at
 `
 
 type CreateUserParams struct {
@@ -28,19 +27,13 @@ type CreateUserParams struct {
 	PasswordHash string    `json:"password_hash"`
 }
 
-type CreateUserRow struct {
-	ID        uuid.UUID    `json:"id"`
-	Email     string       `json:"email"`
-	CreatedAt sql.NullTime `json:"created_at"`
-	UpdatedAt sql.NullTime `json:"updated_at"`
-}
-
-func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (CreateUserRow, error) {
+func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, error) {
 	row := q.queryRow(ctx, q.createUserStmt, createUser, arg.ID, arg.Email, arg.PasswordHash)
-	var i CreateUserRow
+	var i User
 	err := row.Scan(
 		&i.ID,
 		&i.Email,
+		&i.PasswordHash,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)
