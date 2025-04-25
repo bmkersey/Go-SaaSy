@@ -1,0 +1,9 @@
+services:
+  migrate:
+    build:
+      context: .
+    command: ["./migrate"]
+    env_file:
+      - .env
+    depends_on:
+      - db
