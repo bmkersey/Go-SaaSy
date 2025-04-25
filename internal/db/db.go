@@ -30,6 +30,9 @@ func Prepare(ctx context.Context, db DBTX) (*Queries, error) {
 	if q.getUserByEmailStmt, err = db.PrepareContext(ctx, getUserByEmail); err != nil {
 		return nil, fmt.Errorf("error preparing query GetUserByEmail: %w", err)
 	}
+	if q.getUserByIDStmt, err = db.PrepareContext(ctx, getUserByID); err != nil {
+		return nil, fmt.Errorf("error preparing query GetUserByID: %w", err)
+	}
 	return &q, nil
 }
 
@@ -43,6 +46,11 @@ func (q *Queries) Close() error {
 	if q.getUserByEmailStmt != nil {
 		if cerr := q.getUserByEmailStmt.Close(); cerr != nil {
 			err = fmt.Errorf("error closing getUserByEmailStmt: %w", cerr)
+		}
+	}
+	if q.getUserByIDStmt != nil {
+		if cerr := q.getUserByIDStmt.Close(); cerr != nil {
+			err = fmt.Errorf("error closing getUserByIDStmt: %w", cerr)
 		}
 	}
 	return err
@@ -86,6 +94,7 @@ type Queries struct {
 	tx                 *sql.Tx
 	createUserStmt     *sql.Stmt
 	getUserByEmailStmt *sql.Stmt
+	getUserByIDStmt    *sql.Stmt
 }
 
 func (q *Queries) WithTx(tx *sql.Tx) *Queries {
@@ -94,5 +103,6 @@ func (q *Queries) WithTx(tx *sql.Tx) *Queries {
 		tx:                 tx,
 		createUserStmt:     q.createUserStmt,
 		getUserByEmailStmt: q.getUserByEmailStmt,
+		getUserByIDStmt:    q.getUserByIDStmt,
 	}
 }

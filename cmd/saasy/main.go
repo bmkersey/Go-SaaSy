@@ -29,8 +29,14 @@ func main() {
 		w.Write([]byte("SaaSy is running 🚀 (via Chi)"))
 	})
 
-	r.Post("/register", auth.RegisterHandler(store))
-	r.Post("/login", auth.LoginHandler(store, cfg.JwtSecret))
+	r.Post("/api/register", auth.RegisterHandler(store))
+	r.Post("/api/login", auth.LoginHandler(store, cfg.JwtSecret))
+
+	r.Route("/api", func(r chi.Router) {
+		r.Use(auth.AuthMiddleware(cfg.JwtSecret))
+
+		r.Get("/me", auth.MeHandler(store))
+	})
 
 	log.Printf("Starting server on port %s...\n", cfg.Port)
 	log.Fatal(http.ListenAndServe(":"+cfg.Port, r))

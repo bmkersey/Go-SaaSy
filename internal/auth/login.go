@@ -27,7 +27,7 @@ func LoginHandler(store db.Store, jwtSecret string) http.HandlerFunc {
 			return
 		}
 
-		if err := CheckPassword(user.PasswordHash, input.Email); err != nil {
+		if err := CheckPassword(user.PasswordHash, input.Password); err != nil {
 			http.Error(w, "Invalid email or password", http.StatusUnauthorized)
 			return
 		}
@@ -37,6 +37,8 @@ func LoginHandler(store db.Store, jwtSecret string) http.HandlerFunc {
 			http.Error(w, "Failed to generate token", http.StatusInternalServerError)
 			return
 		}
+
+		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(map[string]string{"token": token})
 	}
 }
