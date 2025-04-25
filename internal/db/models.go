@@ -10,6 +10,13 @@ import (
 	"github.com/google/uuid"
 )
 
+type Organization struct {
+	ID        uuid.UUID    `json:"id"`
+	Name      string       `json:"name"`
+	CreatedAt sql.NullTime `json:"created_at"`
+	UpdatedAt sql.NullTime `json:"updated_at"`
+}
+
 type User struct {
 	ID           uuid.UUID    `json:"id"`
 	Email        string       `json:"email"`

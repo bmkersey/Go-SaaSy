@@ -11,7 +11,9 @@ import (
 )
 
 type Querier interface {
+	CreateOrganization(ctx context.Context, name string) (Organization, error)
 	CreateUser(ctx context.Context, arg CreateUserParams) (User, error)
+	GetOrganization(ctx context.Context, id uuid.UUID) (Organization, error)
 	GetUserByEmail(ctx context.Context, email string) (User, error)
 	GetUserByID(ctx context.Context, id uuid.UUID) (User, error)
 }

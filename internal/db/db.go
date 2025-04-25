@@ -24,8 +24,14 @@ func New(db DBTX) *Queries {
 func Prepare(ctx context.Context, db DBTX) (*Queries, error) {
 	q := Queries{db: db}
 	var err error
+	if q.createOrganizationStmt, err = db.PrepareContext(ctx, createOrganization); err != nil {
+		return nil, fmt.Errorf("error preparing query CreateOrganization: %w", err)
+	}
 	if q.createUserStmt, err = db.PrepareContext(ctx, createUser); err != nil {
 		return nil, fmt.Errorf("error preparing query CreateUser: %w", err)
+	}
+	if q.getOrganizationStmt, err = db.PrepareContext(ctx, getOrganization); err != nil {
+		return nil, fmt.Errorf("error preparing query GetOrganization: %w", err)
 	}
 	if q.getUserByEmailStmt, err = db.PrepareContext(ctx, getUserByEmail); err != nil {
 		return nil, fmt.Errorf("error preparing query GetUserByEmail: %w", err)
@@ -38,9 +44,19 @@ func Prepare(ctx context.Context, db DBTX) (*Queries, error) {
 
 func (q *Queries) Close() error {
 	var err error
+	if q.createOrganizationStmt != nil {
+		if cerr := q.createOrganizationStmt.Close(); cerr != nil {
+			err = fmt.Errorf("error closing createOrganizationStmt: %w", cerr)
+		}
+	}
 	if q.createUserStmt != nil {
 		if cerr := q.createUserStmt.Close(); cerr != nil {
 			err = fmt.Errorf("error closing createUserStmt: %w", cerr)
+		}
+	}
+	if q.getOrganizationStmt != nil {
+		if cerr := q.getOrganizationStmt.Close(); cerr != nil {
+			err = fmt.Errorf("error closing getOrganizationStmt: %w", cerr)
 		}
 	}
 	if q.getUserByEmailStmt != nil {
@@ -90,19 +106,23 @@ func (q *Queries) queryRow(ctx context.Context, stmt *sql.Stmt, query string, ar
 }
 
 type Queries struct {
-	db                 DBTX
-	tx                 *sql.Tx
-	createUserStmt     *sql.Stmt
-	getUserByEmailStmt *sql.Stmt
-	getUserByIDStmt    *sql.Stmt
+	db                     DBTX
+	tx                     *sql.Tx
+	createOrganizationStmt *sql.Stmt
+	createUserStmt         *sql.Stmt
+	getOrganizationStmt    *sql.Stmt
+	getUserByEmailStmt     *sql.Stmt
+	getUserByIDStmt        *sql.Stmt
 }
 
 func (q *Queries) WithTx(tx *sql.Tx) *Queries {
 	return &Queries{
-		db:                 tx,
-		tx:                 tx,
-		createUserStmt:     q.createUserStmt,
-		getUserByEmailStmt: q.getUserByEmailStmt,
-		getUserByIDStmt:    q.getUserByIDStmt,
+		db:                     tx,
+		tx:                     tx,
+		createOrganizationStmt: q.createOrganizationStmt,
+		createUserStmt:         q.createUserStmt,
+		getOrganizationStmt:    q.getOrganizationStmt,
+		getUserByEmailStmt:     q.getUserByEmailStmt,
+		getUserByIDStmt:        q.getUserByIDStmt,
 	}
 }
