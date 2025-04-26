@@ -38,7 +38,11 @@ func main() {
 
 		r.Get("/me", auth.MeHandler(store))
 		r.Post("/orgs", orgs.CreateOrganizationHandler(store))
-		r.Get("/orgs/{id}/members", orgs.GetOrgMembers(store))
+
+		r.Route("/orgs", func(r chi.Router) {
+			r.Use(orgs.OrgMiddleware(store))
+			r.Get("/orgs/{id}/members", orgs.GetOrgMembers(store))
+		})
 	})
 
 	log.Printf("Starting server on port %s...\n", cfg.Port)
