@@ -8,6 +8,7 @@ import (
 	"github.com/bmkersey/Go-SaaSy/internal/auth"
 	"github.com/bmkersey/Go-SaaSy/internal/config"
 	"github.com/bmkersey/Go-SaaSy/internal/db"
+	"github.com/bmkersey/Go-SaaSy/internal/orgs"
 	"github.com/go-chi/chi/v5"
 	_ "github.com/lib/pq"
 )
@@ -36,6 +37,8 @@ func main() {
 		r.Use(auth.AuthMiddleware(cfg.JwtSecret))
 
 		r.Get("/me", auth.MeHandler(store))
+		r.Post("/orgs", orgs.CreateOrganizationHandler(store))
+		r.Get("/orgs/{id}/members", orgs.GetOrgMembers(store))
 	})
 
 	log.Printf("Starting server on port %s...\n", cfg.Port)

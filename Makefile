@@ -2,7 +2,7 @@
 include .env
 # Run the app and database with build
 up:
-	docker-compose up --build
+	docker-compose -f docker-compose.yml -f docker-compose.migrate.yml up --build
 
 # Start app and database without rebuilding
 start:
@@ -14,7 +14,7 @@ down:
 
 # Run Goose migrations in isolated container
 migrate:
-	docker-compose -f docker-compose.yml -f docker-compose.migrate.yml run --rm migrate
+	docker-compose --profile migrate -f docker-compose.yml -f docker-compose.migrate.yml run --rm migrate
 
 # Run goose down migrations in isolated container
 migrate-down:

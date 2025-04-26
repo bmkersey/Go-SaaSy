@@ -7,6 +7,7 @@ package db
 
 import (
 	"context"
+	"database/sql"
 
 	"github.com/google/uuid"
 )
@@ -18,7 +19,7 @@ VALUES (
   $2,
   $3
 )
-RETURNING id, email, password_hash, created_at, updated_at
+RETURNING id, email, password_hash, created_at, updated_at, organization_id
 `
 
 type CreateUserParams struct {
@@ -36,12 +37,47 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, e
 		&i.PasswordHash,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.OrganizationID,
 	)
 	return i, err
 }
 
+const getOrgMembers = `-- name: GetOrgMembers :many
+SELECT id, email, created_at FROM users
+WHERE organization_id = $1
+`
+
+type GetOrgMembersRow struct {
+	ID        uuid.UUID    `json:"id"`
+	Email     string       `json:"email"`
+	CreatedAt sql.NullTime `json:"created_at"`
+}
+
+func (q *Queries) GetOrgMembers(ctx context.Context, organizationID uuid.NullUUID) ([]GetOrgMembersRow, error) {
+	rows, err := q.query(ctx, q.getOrgMembersStmt, getOrgMembers, organizationID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetOrgMembersRow
+	for rows.Next() {
+		var i GetOrgMembersRow
+		if err := rows.Scan(&i.ID, &i.Email, &i.CreatedAt); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const getUserByEmail = `-- name: GetUserByEmail :one
-SELECT id, email, password_hash, created_at, updated_at FROM users
+SELECT id, email, password_hash, created_at, updated_at, organization_id FROM users
 WHERE email = $1
 `
 
@@ -54,12 +90,13 @@ func (q *Queries) GetUserByEmail(ctx context.Context, email string) (User, error
 		&i.PasswordHash,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.OrganizationID,
 	)
 	return i, err
 }
 
 const getUserByID = `-- name: GetUserByID :one
-SELECT id, email, password_hash, created_at, updated_at FROM users
+SELECT id, email, password_hash, created_at, updated_at, organization_id FROM users
 where id = $1
 `
 
@@ -72,6 +109,23 @@ func (q *Queries) GetUserByID(ctx context.Context, id uuid.UUID) (User, error) {
 		&i.PasswordHash,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.OrganizationID,
 	)
 	return i, err
+}
+
+const updateUserOrg = `-- name: UpdateUserOrg :exec
+UPDATE users
+SET organization_id = $2
+WHERE id = $1
+`
+
+type UpdateUserOrgParams struct {
+	ID             uuid.UUID     `json:"id"`
+	OrganizationID uuid.NullUUID `json:"organization_id"`
+}
+
+func (q *Queries) UpdateUserOrg(ctx context.Context, arg UpdateUserOrgParams) error {
+	_, err := q.exec(ctx, q.updateUserOrgStmt, updateUserOrg, arg.ID, arg.OrganizationID)
+	return err
 }

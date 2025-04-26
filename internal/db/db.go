@@ -30,6 +30,9 @@ func Prepare(ctx context.Context, db DBTX) (*Queries, error) {
 	if q.createUserStmt, err = db.PrepareContext(ctx, createUser); err != nil {
 		return nil, fmt.Errorf("error preparing query CreateUser: %w", err)
 	}
+	if q.getOrgMembersStmt, err = db.PrepareContext(ctx, getOrgMembers); err != nil {
+		return nil, fmt.Errorf("error preparing query GetOrgMembers: %w", err)
+	}
 	if q.getOrganizationStmt, err = db.PrepareContext(ctx, getOrganization); err != nil {
 		return nil, fmt.Errorf("error preparing query GetOrganization: %w", err)
 	}
@@ -38,6 +41,9 @@ func Prepare(ctx context.Context, db DBTX) (*Queries, error) {
 	}
 	if q.getUserByIDStmt, err = db.PrepareContext(ctx, getUserByID); err != nil {
 		return nil, fmt.Errorf("error preparing query GetUserByID: %w", err)
+	}
+	if q.updateUserOrgStmt, err = db.PrepareContext(ctx, updateUserOrg); err != nil {
+		return nil, fmt.Errorf("error preparing query UpdateUserOrg: %w", err)
 	}
 	return &q, nil
 }
@@ -54,6 +60,11 @@ func (q *Queries) Close() error {
 			err = fmt.Errorf("error closing createUserStmt: %w", cerr)
 		}
 	}
+	if q.getOrgMembersStmt != nil {
+		if cerr := q.getOrgMembersStmt.Close(); cerr != nil {
+			err = fmt.Errorf("error closing getOrgMembersStmt: %w", cerr)
+		}
+	}
 	if q.getOrganizationStmt != nil {
 		if cerr := q.getOrganizationStmt.Close(); cerr != nil {
 			err = fmt.Errorf("error closing getOrganizationStmt: %w", cerr)
@@ -67,6 +78,11 @@ func (q *Queries) Close() error {
 	if q.getUserByIDStmt != nil {
 		if cerr := q.getUserByIDStmt.Close(); cerr != nil {
 			err = fmt.Errorf("error closing getUserByIDStmt: %w", cerr)
+		}
+	}
+	if q.updateUserOrgStmt != nil {
+		if cerr := q.updateUserOrgStmt.Close(); cerr != nil {
+			err = fmt.Errorf("error closing updateUserOrgStmt: %w", cerr)
 		}
 	}
 	return err
@@ -110,9 +126,11 @@ type Queries struct {
 	tx                     *sql.Tx
 	createOrganizationStmt *sql.Stmt
 	createUserStmt         *sql.Stmt
+	getOrgMembersStmt      *sql.Stmt
 	getOrganizationStmt    *sql.Stmt
 	getUserByEmailStmt     *sql.Stmt
 	getUserByIDStmt        *sql.Stmt
+	updateUserOrgStmt      *sql.Stmt
 }
 
 func (q *Queries) WithTx(tx *sql.Tx) *Queries {
@@ -121,8 +139,10 @@ func (q *Queries) WithTx(tx *sql.Tx) *Queries {
 		tx:                     tx,
 		createOrganizationStmt: q.createOrganizationStmt,
 		createUserStmt:         q.createUserStmt,
+		getOrgMembersStmt:      q.getOrgMembersStmt,
 		getOrganizationStmt:    q.getOrganizationStmt,
 		getUserByEmailStmt:     q.getUserByEmailStmt,
 		getUserByIDStmt:        q.getUserByIDStmt,
+		updateUserOrgStmt:      q.updateUserOrgStmt,
 	}
 }

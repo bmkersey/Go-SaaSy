@@ -11,8 +11,10 @@ type Store interface {
 	GetUserByEmail(ctx context.Context, email string) (User, error)
 	CreateUser(ctx context.Context, arg CreateUserParams) (User, error)
 	GetUserByID(ctx context.Context, id uuid.UUID) (User, error)
-	CreateOrganization(ctx context.Context, name string) (Organization, error)
+	UpdateUserOrg(ctx context.Context, arg UpdateUserOrgParams) error
+	CreateOrganization(ctx context.Context, arg CreateOrganizationParams) (Organization, error)
 	GetOrganization(ctx context.Context, id uuid.UUID) (Organization, error)
+	GetOrgMembers(ctx context.Context, organizationID uuid.NullUUID) ([]GetOrgMembersRow, error)
 }
 
 // SQLStore implements the Store interface using sqlc-generated Queries.

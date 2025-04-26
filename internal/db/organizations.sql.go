@@ -12,13 +12,18 @@ import (
 )
 
 const createOrganization = `-- name: CreateOrganization :one
-INSERT INTO organizations (name)
-VALUES ($1)
+INSERT INTO organizations (id, name)
+VALUES ($1, $2)
 RETURNING id, name, created_at, updated_at
 `
 
-func (q *Queries) CreateOrganization(ctx context.Context, name string) (Organization, error) {
-	row := q.queryRow(ctx, q.createOrganizationStmt, createOrganization, name)
+type CreateOrganizationParams struct {
+	ID   uuid.UUID `json:"id"`
+	Name string    `json:"name"`
+}
+
+func (q *Queries) CreateOrganization(ctx context.Context, arg CreateOrganizationParams) (Organization, error) {
+	row := q.queryRow(ctx, q.createOrganizationStmt, createOrganization, arg.ID, arg.Name)
 	var i Organization
 	err := row.Scan(
 		&i.ID,

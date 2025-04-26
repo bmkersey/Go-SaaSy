@@ -18,9 +18,10 @@ type Organization struct {
 }
 
 type User struct {
-	ID           uuid.UUID    `json:"id"`
-	Email        string       `json:"email"`
-	PasswordHash string       `json:"password_hash"`
-	CreatedAt    sql.NullTime `json:"created_at"`
-	UpdatedAt    sql.NullTime `json:"updated_at"`
+	ID             uuid.UUID     `json:"id"`
+	Email          string        `json:"email"`
+	PasswordHash   string        `json:"password_hash"`
+	CreatedAt      sql.NullTime  `json:"created_at"`
+	UpdatedAt      sql.NullTime  `json:"updated_at"`
+	OrganizationID uuid.NullUUID `json:"organization_id"`
 }

@@ -3,6 +3,8 @@ services:
     build:
       context: .
     command: ["./migrate"]
+    profiles:
+      - migrate
     env_file:
       - .env
     depends_on:

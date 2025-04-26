@@ -16,3 +16,13 @@ WHERE email = $1;
 -- name: GetUserByID :one
 SELECT * FROM users
 where id = $1;
+
+
+-- name: UpdateUserOrg :exec
+UPDATE users
+SET organization_id = $2
+WHERE id = $1;
+
+-- name: GetOrgMembers :many
+SELECT id, email, created_at FROM users
+WHERE organization_id = $1;
