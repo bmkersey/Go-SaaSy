@@ -18,10 +18,19 @@ func GetOrgMembers(store db.Store) http.HandlerFunc {
 			return
 		}
 
+		userOrgID, ok := GetOrgID(r)
+		if !ok {
+			http.Error(w, "Org context is missing, Access Denied", http.StatusForbidden)
+		}
+
 		orgIDParam := chi.URLParam(r, "id")
 		if orgIDParam == "" {
 			http.Error(w, "Organization ID is required", http.StatusBadRequest)
 			return
+		}
+
+		if orgIDParam != userOrgID {
+			http.Error(w, "Access denied, you do not belong to this org.", http.StatusForbidden)
 		}
 
 		orgID, err := uuid.Parse(orgIDParam)
