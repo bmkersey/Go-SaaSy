@@ -11,10 +11,14 @@ import (
 )
 
 type Organization struct {
-	ID        uuid.UUID    `json:"id"`
-	Name      string       `json:"name"`
-	CreatedAt sql.NullTime `json:"created_at"`
-	UpdatedAt sql.NullTime `json:"updated_at"`
+	ID                   uuid.UUID      `json:"id"`
+	Name                 string         `json:"name"`
+	CreatedAt            sql.NullTime   `json:"created_at"`
+	UpdatedAt            sql.NullTime   `json:"updated_at"`
+	StripeCustomerID     sql.NullString `json:"stripe_customer_id"`
+	StripeSubscriptionID sql.NullString `json:"stripe_subscription_id"`
+	Plan                 sql.NullString `json:"plan"`
+	BillingEmail         sql.NullString `json:"billing_email"`
 }
 
 type User struct {

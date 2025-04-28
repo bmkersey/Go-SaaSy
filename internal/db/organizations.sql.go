@@ -7,6 +7,7 @@ package db
 
 import (
 	"context"
+	"database/sql"
 
 	"github.com/google/uuid"
 )
@@ -14,7 +15,7 @@ import (
 const createOrganization = `-- name: CreateOrganization :one
 INSERT INTO organizations (id, name)
 VALUES ($1, $2)
-RETURNING id, name, created_at, updated_at
+RETURNING id, name, created_at, updated_at, stripe_customer_id, stripe_subscription_id, plan, billing_email
 `
 
 type CreateOrganizationParams struct {
@@ -30,12 +31,16 @@ func (q *Queries) CreateOrganization(ctx context.Context, arg CreateOrganization
 		&i.Name,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.StripeCustomerID,
+		&i.StripeSubscriptionID,
+		&i.Plan,
+		&i.BillingEmail,
 	)
 	return i, err
 }
 
 const getOrganization = `-- name: GetOrganization :one
-SELECT id, name, created_at, updated_at FROM organizations
+SELECT id, name, created_at, updated_at, stripe_customer_id, stripe_subscription_id, plan, billing_email FROM organizations
 WHERE id = $1
 `
 
@@ -47,6 +52,37 @@ func (q *Queries) GetOrganization(ctx context.Context, id uuid.UUID) (Organizati
 		&i.Name,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.StripeCustomerID,
+		&i.StripeSubscriptionID,
+		&i.Plan,
+		&i.BillingEmail,
 	)
 	return i, err
+}
+
+const updateOrganizationBilling = `-- name: UpdateOrganizationBilling :exec
+UPDATE organizations
+SET
+  stripe_customer_id = $2,
+  stripe_subscription_id = $3,
+  plan = $4,
+  updated_at = NOW()
+WHERE id = $1
+`
+
+type UpdateOrganizationBillingParams struct {
+	ID                   uuid.UUID      `json:"id"`
+	StripeCustomerID     sql.NullString `json:"stripe_customer_id"`
+	StripeSubscriptionID sql.NullString `json:"stripe_subscription_id"`
+	Plan                 sql.NullString `json:"plan"`
+}
+
+func (q *Queries) UpdateOrganizationBilling(ctx context.Context, arg UpdateOrganizationBillingParams) error {
+	_, err := q.exec(ctx, q.updateOrganizationBillingStmt, updateOrganizationBilling,
+		arg.ID,
+		arg.StripeCustomerID,
+		arg.StripeSubscriptionID,
+		arg.Plan,
+	)
+	return err
 }

@@ -23,7 +23,7 @@ var allowedPlans = map[string]string{
 	"ultimate": os.Getenv("STRIPE_PRICE_ID_ULTIMATE"),
 }
 
-func CreatCheckoutHandler() http.HandlerFunc {
+func CreateCheckoutHandler() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		_, ok := auth.GetUserID(r)
 		if !ok {
@@ -39,14 +39,14 @@ func CreatCheckoutHandler() http.HandlerFunc {
 
 		var req CheckoutRequest
 
-		priceID, ok := allowedPlans[req.Plan]
-		if !ok {
-			http.Error(w, "Invalid plan", http.StatusBadRequest)
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			http.Error(w, "Invalid Request", http.StatusBadRequest)
 			return
 		}
 
-		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-			http.Error(w, "Invalid Request", http.StatusBadRequest)
+		priceID, ok := allowedPlans[req.Plan]
+		if !ok {
+			http.Error(w, "Invalid plan", http.StatusBadRequest)
 			return
 		}
 

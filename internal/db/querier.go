@@ -17,6 +17,7 @@ type Querier interface {
 	GetOrganization(ctx context.Context, id uuid.UUID) (Organization, error)
 	GetUserByEmail(ctx context.Context, email string) (User, error)
 	GetUserByID(ctx context.Context, id uuid.UUID) (User, error)
+	UpdateOrganizationBilling(ctx context.Context, arg UpdateOrganizationBillingParams) error
 	UpdateUserOrg(ctx context.Context, arg UpdateUserOrgParams) error
 }
 

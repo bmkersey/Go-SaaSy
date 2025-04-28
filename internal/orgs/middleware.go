@@ -40,6 +40,9 @@ func OrgMiddleware(store db.Store) func(http.Handler) http.Handler {
 
 func GetOrgID(r *http.Request) (string, bool) {
 	val := r.Context().Value(orgIDKey)
-	id, ok := val.(string)
-	return id, ok
+	id, ok := val.(uuid.UUID)
+	if !ok {
+		return "", false
+	}
+	return id.String(), ok
 }

@@ -42,6 +42,9 @@ func Prepare(ctx context.Context, db DBTX) (*Queries, error) {
 	if q.getUserByIDStmt, err = db.PrepareContext(ctx, getUserByID); err != nil {
 		return nil, fmt.Errorf("error preparing query GetUserByID: %w", err)
 	}
+	if q.updateOrganizationBillingStmt, err = db.PrepareContext(ctx, updateOrganizationBilling); err != nil {
+		return nil, fmt.Errorf("error preparing query UpdateOrganizationBilling: %w", err)
+	}
 	if q.updateUserOrgStmt, err = db.PrepareContext(ctx, updateUserOrg); err != nil {
 		return nil, fmt.Errorf("error preparing query UpdateUserOrg: %w", err)
 	}
@@ -78,6 +81,11 @@ func (q *Queries) Close() error {
 	if q.getUserByIDStmt != nil {
 		if cerr := q.getUserByIDStmt.Close(); cerr != nil {
 			err = fmt.Errorf("error closing getUserByIDStmt: %w", cerr)
+		}
+	}
+	if q.updateOrganizationBillingStmt != nil {
+		if cerr := q.updateOrganizationBillingStmt.Close(); cerr != nil {
+			err = fmt.Errorf("error closing updateOrganizationBillingStmt: %w", cerr)
 		}
 	}
 	if q.updateUserOrgStmt != nil {
@@ -122,27 +130,29 @@ func (q *Queries) queryRow(ctx context.Context, stmt *sql.Stmt, query string, ar
 }
 
 type Queries struct {
-	db                     DBTX
-	tx                     *sql.Tx
-	createOrganizationStmt *sql.Stmt
-	createUserStmt         *sql.Stmt
-	getOrgMembersStmt      *sql.Stmt
-	getOrganizationStmt    *sql.Stmt
-	getUserByEmailStmt     *sql.Stmt
-	getUserByIDStmt        *sql.Stmt
-	updateUserOrgStmt      *sql.Stmt
+	db                            DBTX
+	tx                            *sql.Tx
+	createOrganizationStmt        *sql.Stmt
+	createUserStmt                *sql.Stmt
+	getOrgMembersStmt             *sql.Stmt
+	getOrganizationStmt           *sql.Stmt
+	getUserByEmailStmt            *sql.Stmt
+	getUserByIDStmt               *sql.Stmt
+	updateOrganizationBillingStmt *sql.Stmt
+	updateUserOrgStmt             *sql.Stmt
 }
 
 func (q *Queries) WithTx(tx *sql.Tx) *Queries {
 	return &Queries{
-		db:                     tx,
-		tx:                     tx,
-		createOrganizationStmt: q.createOrganizationStmt,
-		createUserStmt:         q.createUserStmt,
-		getOrgMembersStmt:      q.getOrgMembersStmt,
-		getOrganizationStmt:    q.getOrganizationStmt,
-		getUserByEmailStmt:     q.getUserByEmailStmt,
-		getUserByIDStmt:        q.getUserByIDStmt,
-		updateUserOrgStmt:      q.updateUserOrgStmt,
+		db:                            tx,
+		tx:                            tx,
+		createOrganizationStmt:        q.createOrganizationStmt,
+		createUserStmt:                q.createUserStmt,
+		getOrgMembersStmt:             q.getOrgMembersStmt,
+		getOrganizationStmt:           q.getOrganizationStmt,
+		getUserByEmailStmt:            q.getUserByEmailStmt,
+		getUserByIDStmt:               q.getUserByIDStmt,
+		updateOrganizationBillingStmt: q.updateOrganizationBillingStmt,
+		updateUserOrgStmt:             q.updateUserOrgStmt,
 	}
 }

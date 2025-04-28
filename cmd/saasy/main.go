@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	"github.com/bmkersey/Go-SaaSy/internal/auth"
+	"github.com/bmkersey/Go-SaaSy/internal/billing"
 	"github.com/bmkersey/Go-SaaSy/internal/config"
 	"github.com/bmkersey/Go-SaaSy/internal/db"
 	"github.com/bmkersey/Go-SaaSy/internal/orgs"
@@ -35,16 +36,22 @@ func main() {
 
 	r.Post("/api/register", auth.RegisterHandler(store))
 	r.Post("/api/login", auth.LoginHandler(store, cfg.JwtSecret))
+	r.Post("/api/billing/webhook", billing.WebhookHandler(store))
 
 	r.Route("/api", func(r chi.Router) {
+
 		r.Use(auth.AuthMiddleware(cfg.JwtSecret))
 
 		r.Get("/me", auth.MeHandler(store))
-		r.Post("/orgs", orgs.CreateOrganizationHandler(store))
+		r.Post("/createorg", orgs.CreateOrganizationHandler(store))
+		r.Route("/billing", func(r chi.Router) {
+			r.Use(orgs.OrgMiddleware(store))
+			r.Post("/checkout", billing.CreateCheckoutHandler())
+		})
 
 		r.Route("/orgs", func(r chi.Router) {
 			r.Use(orgs.OrgMiddleware(store))
-			r.Get("/orgs/{id}/members", orgs.GetOrgMembers(store))
+			r.Get("/{id}/members", orgs.GetOrgMembers(store))
 		})
 	})
 

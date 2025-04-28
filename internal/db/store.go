@@ -15,6 +15,7 @@ type Store interface {
 	CreateOrganization(ctx context.Context, arg CreateOrganizationParams) (Organization, error)
 	GetOrganization(ctx context.Context, id uuid.UUID) (Organization, error)
 	GetOrgMembers(ctx context.Context, organizationID uuid.NullUUID) ([]GetOrgMembersRow, error)
+	UpdateOrganizationBilling(ctx context.Context, arg UpdateOrganizationBillingParams) error
 }
 
 // SQLStore implements the Store interface using sqlc-generated Queries.
