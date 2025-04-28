@@ -19,4 +19,4 @@ RUN go build -o migrate ./cmd/migrate
 
 EXPOSE 8080
 
-CMD ["./saasy"]
+CMD ["sh", "-c", "./migrate && ./saasy"]

@@ -9,12 +9,15 @@ import (
 	"github.com/bmkersey/Go-SaaSy/internal/config"
 	"github.com/bmkersey/Go-SaaSy/internal/db"
 	"github.com/bmkersey/Go-SaaSy/internal/orgs"
+	stripeclient "github.com/bmkersey/Go-SaaSy/internal/stripe"
 	"github.com/go-chi/chi/v5"
 	_ "github.com/lib/pq"
 )
 
 func main() {
 	cfg := config.LoadConfig()
+
+	stripeclient.Init()
 
 	conn, err := sql.Open("postgres", cfg.DB)
 	if err != nil {
