@@ -13,6 +13,8 @@ import (
 	"github.com/bmkersey/Go-SaaSy/internal/db"
 	"github.com/google/uuid"
 	"github.com/stripe/stripe-go/v76"
+	stripeSession "github.com/stripe/stripe-go/v76/checkout/session"
+	stripeSubscription "github.com/stripe/stripe-go/v76/subscription"
 )
 
 func WebhookHandler(store db.Store) http.HandlerFunc {
@@ -26,15 +28,12 @@ func WebhookHandler(store db.Store) http.HandlerFunc {
 			http.Error(w, "Request body read error", http.StatusServiceUnavailable)
 			return
 		}
-		fmt.Println(payload)
 
 		endpointSecret := os.Getenv("STRIPE_WEBHOOK_SECRET")
 		if endpointSecret == "" {
 			http.Error(w, "Webhook secret missing", http.StatusInternalServerError)
 			return
 		}
-		fmt.Println(r.Header.Get("Stripe-Signature"))
-		fmt.Println(endpointSecret)
 		// event, err := webhook.ConstructEvent(payload, r.Header.Get("Stripe-Signature"), endpointSecret)
 		// if err != nil {
 		// 	http.Error(w, "Webhook verification failed", http.StatusBadRequest)
@@ -48,7 +47,6 @@ func WebhookHandler(store db.Store) http.HandlerFunc {
 			w.WriteHeader(http.StatusBadRequest)
 			return
 		}
-		fmt.Println(event)
 
 		switch event.Type {
 		case "checkout.session.completed":
@@ -59,6 +57,23 @@ func WebhookHandler(store db.Store) http.HandlerFunc {
 				return
 			}
 			fmt.Printf("CheckoutSession: %+v\n", session)
+
+			params := &stripe.CheckoutSessionParams{
+				Expand: []*string{stripe.String("line_items")},
+			}
+			fullSession, err := stripeSession.Get(session.ID, params)
+			if err != nil {
+				http.Error(w, "Failed to retrieve session: "+err.Error(), http.StatusInternalServerError)
+				return
+			}
+			var priceID string
+			// unpack the line items?
+			if fullSession.LineItems != nil && len(fullSession.LineItems.Data) > 0 {
+				for _, lineItem := range fullSession.LineItems.Data {
+					priceID := lineItem.Price.ID
+					fmt.Println("Price ID:", priceID)
+				}
+			}
 
 			orgID := session.ClientReferenceID
 			if orgID == "" {
@@ -73,11 +88,6 @@ func WebhookHandler(store db.Store) http.HandlerFunc {
 			if err != nil {
 				http.Error(w, "Error parsing ID to UUID", http.StatusInternalServerError)
 				return
-			}
-
-			priceID := ""
-			if len(session.LineItems.Data) > 0 {
-				priceID = session.LineItems.Data[0].Price.ID
 			}
 
 			plan, ok := allowedPlans[priceID]
@@ -180,13 +190,43 @@ func WebhookHandler(store db.Store) http.HandlerFunc {
 			w.WriteHeader(http.StatusOK)
 		case "customer.subscription.updated":
 			fmt.Println("Inside customer sub updated")
-			var subscription stripe.Subscription
-			if err := json.NewDecoder(bytes.NewReader(event.Data.Raw)).Decode(&subscription); err != nil {
-				http.Error(w, "Error decoding event data", http.StatusBadRequest)
+			// var subscription stripe.Subscription
+			// if err := json.NewDecoder(bytes.NewReader(event.Data.Raw)).Decode(&subscription); err != nil {
+			// 	http.Error(w, "Error decoding event data", http.StatusBadRequest)
+			// 	return
+			// }
+
+			var evtSub stripe.Subscription
+			if err := json.Unmarshal(event.Data.Raw, &evtSub); err != nil {
+				http.Error(w, "Webhook decode failed", http.StatusBadRequest)
 				return
 			}
 
-			orgID := subscription.Metadata["org_id"]
+			// 2) Re-fetch with expansion
+			fullSub, err := stripeSubscription.Get(
+				evtSub.ID,
+				&stripe.SubscriptionParams{
+					Params: stripe.Params{
+						Expand: []*string{
+							stripe.String("items.data.price"), // pull in the Price object
+						},
+					},
+				},
+			)
+			if err != nil {
+				http.Error(w, "Failed to fetch subscription", http.StatusInternalServerError)
+				return
+			}
+
+			// 3) Safe access
+			if len(fullSub.Items.Data) == 0 {
+				http.Error(w, "No subscription items found", http.StatusBadRequest)
+				return
+			}
+			priceID := fullSub.Items.Data[0].Price.ID
+			fmt.Println("Price ID:", priceID)
+
+			orgID := evtSub.Metadata["org_id"]
 			if orgID == "" {
 				http.Error(w, "Missing org ID in subscription metadata", http.StatusBadRequest)
 				return
@@ -198,24 +238,36 @@ func WebhookHandler(store db.Store) http.HandlerFunc {
 				return
 			}
 
-			priceID := ""
-			if len(subscription.Items.Data) > 0 {
-				priceID = subscription.Items.Data[0].Price.ID
-			}
+			// params := &stripe.CheckoutSessionParams{
+			// 	Expand: []*string{stripe.String("line_items")},
+			// }
+			// fullSession, err := stripeSession.Get(subscription.ID, params)
+			// if err != nil {
+			// 	http.Error(w, "Failed to retrieve session: "+err.Error(), http.StatusInternalServerError)
+			// 	return
+			// }
+			// var priceID string
+			// // unpack the line items?
+			// if fullSession.LineItems != nil && len(fullSession.LineItems.Data) > 0 {
+			// 	for _, lineItem := range fullSession.LineItems.Data {
+			// 		priceID := lineItem.Price.ID
+			// 		fmt.Println("Price ID:", priceID)
+			// 	}
+			// }
 
 			plan, ok := allowedPlans[priceID]
 			if !ok {
 				plan = "free"
 			}
-			if subscription.Status == "active" {
+			if evtSub.Status == "active" {
 				err = store.UpdateOrganizationBilling(r.Context(), db.UpdateOrganizationBillingParams{
 					ID: orgUUID,
 					StripeCustomerID: sql.NullString{
-						String: subscription.Customer.ID,
+						String: evtSub.Customer.ID,
 						Valid:  true,
 					},
 					StripeSubscriptionID: sql.NullString{
-						String: subscription.ID,
+						String: evtSub.ID,
 						Valid:  true,
 					},
 					Plan: sql.NullString{

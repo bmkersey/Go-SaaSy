@@ -40,8 +40,6 @@ func CreateCheckoutSeassion(orgID string, priceID string) (string, error) {
 	// 	},
 	// }
 
-	params.AddExpand("subscription") // ✅ Expand Subscription
-	params.AddExpand("customer")     // ✅ Expand Customer
 	params.AddExpand("line_items")
 
 	s, err := session.New(params)
