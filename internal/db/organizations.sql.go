@@ -13,35 +13,32 @@ import (
 )
 
 const createOrganization = `-- name: CreateOrganization :one
-INSERT INTO organizations (id, name)
-VALUES ($1, $2)
-RETURNING id, name, created_at, updated_at, stripe_customer_id, stripe_subscription_id, plan, billing_email, is_paid
+INSERT INTO organizations (id, name, owner_id)
+VALUES ($1, $2, $3)
+RETURNING id, name, owner_id
 `
 
 type CreateOrganizationParams struct {
-	ID   uuid.UUID `json:"id"`
-	Name string    `json:"name"`
+	ID      uuid.UUID `json:"id"`
+	Name    string    `json:"name"`
+	OwnerID uuid.UUID `json:"owner_id"`
 }
 
-func (q *Queries) CreateOrganization(ctx context.Context, arg CreateOrganizationParams) (Organization, error) {
-	row := q.queryRow(ctx, q.createOrganizationStmt, createOrganization, arg.ID, arg.Name)
-	var i Organization
-	err := row.Scan(
-		&i.ID,
-		&i.Name,
-		&i.CreatedAt,
-		&i.UpdatedAt,
-		&i.StripeCustomerID,
-		&i.StripeSubscriptionID,
-		&i.Plan,
-		&i.BillingEmail,
-		&i.IsPaid,
-	)
+type CreateOrganizationRow struct {
+	ID      uuid.UUID `json:"id"`
+	Name    string    `json:"name"`
+	OwnerID uuid.UUID `json:"owner_id"`
+}
+
+func (q *Queries) CreateOrganization(ctx context.Context, arg CreateOrganizationParams) (CreateOrganizationRow, error) {
+	row := q.queryRow(ctx, q.createOrganizationStmt, createOrganization, arg.ID, arg.Name, arg.OwnerID)
+	var i CreateOrganizationRow
+	err := row.Scan(&i.ID, &i.Name, &i.OwnerID)
 	return i, err
 }
 
 const getOrganization = `-- name: GetOrganization :one
-SELECT id, name, created_at, updated_at, stripe_customer_id, stripe_subscription_id, plan, billing_email, is_paid FROM organizations
+SELECT id, name, created_at, updated_at, stripe_customer_id, stripe_subscription_id, plan, billing_email, is_paid, owner_id FROM organizations
 WHERE id = $1
 `
 
@@ -58,6 +55,7 @@ func (q *Queries) GetOrganization(ctx context.Context, id uuid.UUID) (Organizati
 		&i.Plan,
 		&i.BillingEmail,
 		&i.IsPaid,
+		&i.OwnerID,
 	)
 	return i, err
 }

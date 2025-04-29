@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html>
+  <body style="font-family: sans-serif; background-color: #f4f4f4; padding: 20px;">
+    <div style="max-width: 600px; background-color: white; padding: 30px; border-radius: 8px; margin: auto; text-align: center;">
+      <h2>Password Reset Requested</h2>
+      <p>Hi {{.Email}},</p>
+      <p>Click the button below to reset your SaaSy password:</p>
+
+      <p>
+        <a href="{{.Link}}" style="
+          background-color: #007BFF;
+          color: white;
+          padding: 12px 24px;
+          text-decoration: none;
+          border-radius: 5px;
+          display: inline-block;
+          font-weight: bold;">
+          Reset Password
+        </a>
+      </p>
+
+      <p>This link will expire in 10 minutes. If you didn’t request a reset, you can ignore this email.</p>
+    </div>
+  </body>
+</html>

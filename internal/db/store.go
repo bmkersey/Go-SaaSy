@@ -12,10 +12,14 @@ type Store interface {
 	CreateUser(ctx context.Context, arg CreateUserParams) (User, error)
 	GetUserByID(ctx context.Context, id uuid.UUID) (User, error)
 	UpdateUserOrg(ctx context.Context, arg UpdateUserOrgParams) error
-	CreateOrganization(ctx context.Context, arg CreateOrganizationParams) (Organization, error)
+	CreateOrganization(ctx context.Context, arg CreateOrganizationParams) (CreateOrganizationRow, error)
 	GetOrganization(ctx context.Context, id uuid.UUID) (Organization, error)
 	GetOrgMembers(ctx context.Context, organizationID uuid.NullUUID) ([]GetOrgMembersRow, error)
 	UpdateOrganizationBilling(ctx context.Context, arg UpdateOrganizationBillingParams) error
+	CreatePasswordReset(ctx context.Context, arg CreatePasswordResetParams) error
+	GetPasswordResetByToken(ctx context.Context, token string) (PasswordReset, error)
+	DeletePasswordReset(ctx context.Context, token string) error
+	UpdateUserPassword(ctx context.Context, arg UpdateUserPasswordParams) error
 }
 
 // SQLStore implements the Store interface using sqlc-generated Queries.

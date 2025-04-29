@@ -41,7 +41,9 @@ rebuild:
 	docker-compose down
 	docker-compose build
 	docker-compose up
-
+# Sends the test email
+reset-email:
+	docker compose run --rm app go run cmd/sendreset/main.go
 # Tail logs
 logs:
 	docker-compose logs -f --tail=100

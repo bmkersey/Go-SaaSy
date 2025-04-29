@@ -11,14 +11,18 @@ import (
 )
 
 type Querier interface {
-	CreateOrganization(ctx context.Context, arg CreateOrganizationParams) (Organization, error)
+	CreateOrganization(ctx context.Context, arg CreateOrganizationParams) (CreateOrganizationRow, error)
+	CreatePasswordReset(ctx context.Context, arg CreatePasswordResetParams) error
 	CreateUser(ctx context.Context, arg CreateUserParams) (User, error)
+	DeletePasswordReset(ctx context.Context, token string) error
 	GetOrgMembers(ctx context.Context, organizationID uuid.NullUUID) ([]GetOrgMembersRow, error)
 	GetOrganization(ctx context.Context, id uuid.UUID) (Organization, error)
+	GetPasswordResetByToken(ctx context.Context, token string) (PasswordReset, error)
 	GetUserByEmail(ctx context.Context, email string) (User, error)
 	GetUserByID(ctx context.Context, id uuid.UUID) (User, error)
 	UpdateOrganizationBilling(ctx context.Context, arg UpdateOrganizationBillingParams) error
 	UpdateUserOrg(ctx context.Context, arg UpdateUserOrgParams) error
+	UpdateUserPassword(ctx context.Context, arg UpdateUserPasswordParams) error
 }
 
 var _ Querier = (*Queries)(nil)

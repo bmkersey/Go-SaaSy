@@ -6,6 +6,7 @@ package db
 
 import (
 	"database/sql"
+	"time"
 
 	"github.com/google/uuid"
 )
@@ -20,6 +21,15 @@ type Organization struct {
 	Plan                 sql.NullString `json:"plan"`
 	BillingEmail         sql.NullString `json:"billing_email"`
 	IsPaid               bool           `json:"is_paid"`
+	OwnerID              uuid.UUID      `json:"owner_id"`
+}
+
+type PasswordReset struct {
+	ID        uuid.UUID `json:"id"`
+	UserID    uuid.UUID `json:"user_id"`
+	Token     string    `json:"token"`
+	ExpiresAt time.Time `json:"expires_at"`
+	CreatedAt time.Time `json:"created_at"`
 }
 
 type User struct {

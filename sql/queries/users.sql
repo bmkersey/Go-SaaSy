@@ -26,3 +26,8 @@ WHERE id = $1;
 -- name: GetOrgMembers :many
 SELECT id, email, created_at FROM users
 WHERE organization_id = $1;
+
+-- name: UpdateUserPassword :exec
+UPDATE users
+SET password_hash = $1
+WHERE email = $2;

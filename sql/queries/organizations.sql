@@ -1,7 +1,7 @@
 -- name: CreateOrganization :one
-INSERT INTO organizations (id, name)
-VALUES ($1, $2)
-RETURNING *;
+INSERT INTO organizations (id, name, owner_id)
+VALUES ($1, $2, $3)
+RETURNING id, name, owner_id;
 
 
 -- name: GetOrganization :one

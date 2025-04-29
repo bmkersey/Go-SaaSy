@@ -6,18 +6,25 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 
 	"net/http"
 	"os"
 
 	"github.com/bmkersey/Go-SaaSy/internal/db"
+	"github.com/bmkersey/Go-SaaSy/internal/email"
 	"github.com/google/uuid"
 	"github.com/stripe/stripe-go/v82"
 	stripeSession "github.com/stripe/stripe-go/v82/checkout/session"
 	stripeSubscription "github.com/stripe/stripe-go/v82/subscription"
 )
 
-func WebhookHandler(store db.Store) http.HandlerFunc {
+var allowedPlansReversed = map[string]string{
+	os.Getenv("STRIPE_PRICE_ID_PRO"):      "pro",
+	os.Getenv("STRIPE_PRICE_ID_ULTIMATE"): "ultimate",
+}
+
+func WebhookHandler(store db.Store, sender *email.EmailSender) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		fmt.Println("Inside webhook handler")
 		const MaxBodyBytes = int64(65536)
@@ -85,9 +92,9 @@ func WebhookHandler(store db.Store) http.HandlerFunc {
 				return
 			}
 
-			plan, ok := allowedPlans[priceID]
+			plan, ok := allowedPlansReversed[priceID]
 			if !ok {
-				plan = "basic" // fallback if unknown
+				plan = "basic" // fallback if priceID not found
 			}
 			fmt.Println(plan)
 			stripeCustomerID := ""
@@ -127,6 +134,33 @@ func WebhookHandler(store db.Store) http.HandlerFunc {
 				http.Error(w, "Failed to update billing", http.StatusInternalServerError)
 				return
 			}
+			org, err := store.GetOrganization(r.Context(), orgUUID)
+			if err != nil {
+				http.Error(w, "Error fetching Organization", http.StatusBadRequest)
+				return
+			}
+
+			user, err := store.GetUserByID(r.Context(), org.OwnerID)
+			if err != nil {
+				log.Printf("Error fetching user: %v", err)
+				return
+			}
+
+			go func() {
+				data := struct {
+					Email string
+					Plan  string
+				}{
+					Email: user.Email,
+					Plan:  plan,
+				}
+
+				err := sender.SendTemplate(user.Email, "Your SaaSy Plan Changed", "plan_change.html.tmpl", data)
+				if err != nil {
+					log.Printf("Failed to send plan change email: %v", err)
+				}
+				fmt.Println("Email sent successfully")
+			}()
 
 			w.WriteHeader(http.StatusOK)
 
@@ -155,9 +189,9 @@ func WebhookHandler(store db.Store) http.HandlerFunc {
 				priceID = subscription.Items.Data[0].Price.ID
 			}
 
-			plan, ok := allowedPlans[priceID]
+			plan, ok := allowedPlansReversed[priceID]
 			if !ok {
-				plan = "free"
+				plan = "basic" // fallback if priceID not found
 			}
 
 			err = store.UpdateOrganizationBilling(r.Context(), db.UpdateOrganizationBillingParams{
@@ -182,14 +216,36 @@ func WebhookHandler(store db.Store) http.HandlerFunc {
 				return
 			}
 
+			org, err := store.GetOrganization(r.Context(), orgUUID)
+			if err != nil {
+				http.Error(w, "Error fetching Organization", http.StatusBadRequest)
+				return
+			}
+
+			user, err := store.GetUserByID(r.Context(), org.OwnerID)
+			if err != nil {
+				log.Printf("Error fetching user: %v", err)
+				return
+			}
+
+			go func() {
+				data := struct {
+					Email string
+					Plan  string
+				}{
+					Email: user.Email,
+					Plan:  plan,
+				}
+
+				err := sender.SendTemplate(user.Email, "Your SaaSy Plan Changed", "plan_change.html.tmpl", data)
+				if err != nil {
+					log.Printf("Failed to send plan change email: %v", err)
+				}
+			}()
+
 			w.WriteHeader(http.StatusOK)
 		case "customer.subscription.updated":
 			fmt.Println("Inside customer sub updated")
-			// var subscription stripe.Subscription
-			// if err := json.NewDecoder(bytes.NewReader(event.Data.Raw)).Decode(&subscription); err != nil {
-			// 	http.Error(w, "Error decoding event data", http.StatusBadRequest)
-			// 	return
-			// }
 
 			var evtSub stripe.Subscription
 			if err := json.Unmarshal(event.Data.Raw, &evtSub); err != nil {
@@ -197,13 +253,12 @@ func WebhookHandler(store db.Store) http.HandlerFunc {
 				return
 			}
 
-			// 2) Re-fetch with expansion
 			fullSub, err := stripeSubscription.Get(
 				evtSub.ID,
 				&stripe.SubscriptionParams{
 					Params: stripe.Params{
 						Expand: []*string{
-							stripe.String("items.data.price"), // pull in the Price object
+							stripe.String("items.data.price"),
 						},
 					},
 				},
@@ -213,7 +268,6 @@ func WebhookHandler(store db.Store) http.HandlerFunc {
 				return
 			}
 
-			// 3) Safe access
 			if len(fullSub.Items.Data) == 0 {
 				http.Error(w, "No subscription items found", http.StatusBadRequest)
 				return
@@ -233,27 +287,11 @@ func WebhookHandler(store db.Store) http.HandlerFunc {
 				return
 			}
 
-			// params := &stripe.CheckoutSessionParams{
-			// 	Expand: []*string{stripe.String("line_items")},
-			// }
-			// fullSession, err := stripeSession.Get(subscription.ID, params)
-			// if err != nil {
-			// 	http.Error(w, "Failed to retrieve session: "+err.Error(), http.StatusInternalServerError)
-			// 	return
-			// }
-			// var priceID string
-			// // unpack the line items?
-			// if fullSession.LineItems != nil && len(fullSession.LineItems.Data) > 0 {
-			// 	for _, lineItem := range fullSession.LineItems.Data {
-			// 		priceID := lineItem.Price.ID
-			// 		fmt.Println("Price ID:", priceID)
-			// 	}
-			// }
-
-			plan, ok := allowedPlans[priceID]
+			plan, ok := allowedPlansReversed[priceID]
 			if !ok {
-				plan = "free"
+				plan = "basic" // fallback if priceID not found
 			}
+
 			if evtSub.Status == "active" {
 				err = store.UpdateOrganizationBilling(r.Context(), db.UpdateOrganizationBillingParams{
 					ID: orgUUID,
@@ -277,6 +315,34 @@ func WebhookHandler(store db.Store) http.HandlerFunc {
 					return
 				}
 			}
+
+			org, err := store.GetOrganization(r.Context(), orgUUID)
+			if err != nil {
+				http.Error(w, "Error fetching Organization", http.StatusBadRequest)
+				return
+			}
+
+			user, err := store.GetUserByID(r.Context(), org.OwnerID)
+			if err != nil {
+				log.Printf("Error fetching user: %v", err)
+				return
+			}
+
+			go func() {
+				data := struct {
+					Email string
+					Plan  string
+				}{
+					Email: user.Email,
+					Plan:  plan,
+				}
+
+				err := sender.SendTemplate(user.Email, "Your SaaSy Plan Changed", "plan_change.html.tmpl", data)
+				if err != nil {
+					log.Printf("Failed to send plan change email: %v", err)
+				}
+				fmt.Println("Email sent successfully")
+			}()
 
 			w.WriteHeader(http.StatusOK)
 

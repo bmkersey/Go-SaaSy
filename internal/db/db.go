@@ -27,14 +27,23 @@ func Prepare(ctx context.Context, db DBTX) (*Queries, error) {
 	if q.createOrganizationStmt, err = db.PrepareContext(ctx, createOrganization); err != nil {
 		return nil, fmt.Errorf("error preparing query CreateOrganization: %w", err)
 	}
+	if q.createPasswordResetStmt, err = db.PrepareContext(ctx, createPasswordReset); err != nil {
+		return nil, fmt.Errorf("error preparing query CreatePasswordReset: %w", err)
+	}
 	if q.createUserStmt, err = db.PrepareContext(ctx, createUser); err != nil {
 		return nil, fmt.Errorf("error preparing query CreateUser: %w", err)
+	}
+	if q.deletePasswordResetStmt, err = db.PrepareContext(ctx, deletePasswordReset); err != nil {
+		return nil, fmt.Errorf("error preparing query DeletePasswordReset: %w", err)
 	}
 	if q.getOrgMembersStmt, err = db.PrepareContext(ctx, getOrgMembers); err != nil {
 		return nil, fmt.Errorf("error preparing query GetOrgMembers: %w", err)
 	}
 	if q.getOrganizationStmt, err = db.PrepareContext(ctx, getOrganization); err != nil {
 		return nil, fmt.Errorf("error preparing query GetOrganization: %w", err)
+	}
+	if q.getPasswordResetByTokenStmt, err = db.PrepareContext(ctx, getPasswordResetByToken); err != nil {
+		return nil, fmt.Errorf("error preparing query GetPasswordResetByToken: %w", err)
 	}
 	if q.getUserByEmailStmt, err = db.PrepareContext(ctx, getUserByEmail); err != nil {
 		return nil, fmt.Errorf("error preparing query GetUserByEmail: %w", err)
@@ -48,6 +57,9 @@ func Prepare(ctx context.Context, db DBTX) (*Queries, error) {
 	if q.updateUserOrgStmt, err = db.PrepareContext(ctx, updateUserOrg); err != nil {
 		return nil, fmt.Errorf("error preparing query UpdateUserOrg: %w", err)
 	}
+	if q.updateUserPasswordStmt, err = db.PrepareContext(ctx, updateUserPassword); err != nil {
+		return nil, fmt.Errorf("error preparing query UpdateUserPassword: %w", err)
+	}
 	return &q, nil
 }
 
@@ -58,9 +70,19 @@ func (q *Queries) Close() error {
 			err = fmt.Errorf("error closing createOrganizationStmt: %w", cerr)
 		}
 	}
+	if q.createPasswordResetStmt != nil {
+		if cerr := q.createPasswordResetStmt.Close(); cerr != nil {
+			err = fmt.Errorf("error closing createPasswordResetStmt: %w", cerr)
+		}
+	}
 	if q.createUserStmt != nil {
 		if cerr := q.createUserStmt.Close(); cerr != nil {
 			err = fmt.Errorf("error closing createUserStmt: %w", cerr)
+		}
+	}
+	if q.deletePasswordResetStmt != nil {
+		if cerr := q.deletePasswordResetStmt.Close(); cerr != nil {
+			err = fmt.Errorf("error closing deletePasswordResetStmt: %w", cerr)
 		}
 	}
 	if q.getOrgMembersStmt != nil {
@@ -71,6 +93,11 @@ func (q *Queries) Close() error {
 	if q.getOrganizationStmt != nil {
 		if cerr := q.getOrganizationStmt.Close(); cerr != nil {
 			err = fmt.Errorf("error closing getOrganizationStmt: %w", cerr)
+		}
+	}
+	if q.getPasswordResetByTokenStmt != nil {
+		if cerr := q.getPasswordResetByTokenStmt.Close(); cerr != nil {
+			err = fmt.Errorf("error closing getPasswordResetByTokenStmt: %w", cerr)
 		}
 	}
 	if q.getUserByEmailStmt != nil {
@@ -91,6 +118,11 @@ func (q *Queries) Close() error {
 	if q.updateUserOrgStmt != nil {
 		if cerr := q.updateUserOrgStmt.Close(); cerr != nil {
 			err = fmt.Errorf("error closing updateUserOrgStmt: %w", cerr)
+		}
+	}
+	if q.updateUserPasswordStmt != nil {
+		if cerr := q.updateUserPasswordStmt.Close(); cerr != nil {
+			err = fmt.Errorf("error closing updateUserPasswordStmt: %w", cerr)
 		}
 	}
 	return err
@@ -133,13 +165,17 @@ type Queries struct {
 	db                            DBTX
 	tx                            *sql.Tx
 	createOrganizationStmt        *sql.Stmt
+	createPasswordResetStmt       *sql.Stmt
 	createUserStmt                *sql.Stmt
+	deletePasswordResetStmt       *sql.Stmt
 	getOrgMembersStmt             *sql.Stmt
 	getOrganizationStmt           *sql.Stmt
+	getPasswordResetByTokenStmt   *sql.Stmt
 	getUserByEmailStmt            *sql.Stmt
 	getUserByIDStmt               *sql.Stmt
 	updateOrganizationBillingStmt *sql.Stmt
 	updateUserOrgStmt             *sql.Stmt
+	updateUserPasswordStmt        *sql.Stmt
 }
 
 func (q *Queries) WithTx(tx *sql.Tx) *Queries {
@@ -147,12 +183,16 @@ func (q *Queries) WithTx(tx *sql.Tx) *Queries {
 		db:                            tx,
 		tx:                            tx,
 		createOrganizationStmt:        q.createOrganizationStmt,
+		createPasswordResetStmt:       q.createPasswordResetStmt,
 		createUserStmt:                q.createUserStmt,
+		deletePasswordResetStmt:       q.deletePasswordResetStmt,
 		getOrgMembersStmt:             q.getOrgMembersStmt,
 		getOrganizationStmt:           q.getOrganizationStmt,
+		getPasswordResetByTokenStmt:   q.getPasswordResetByTokenStmt,
 		getUserByEmailStmt:            q.getUserByEmailStmt,
 		getUserByIDStmt:               q.getUserByIDStmt,
 		updateOrganizationBillingStmt: q.updateOrganizationBillingStmt,
 		updateUserOrgStmt:             q.updateUserOrgStmt,
+		updateUserPasswordStmt:        q.updateUserPasswordStmt,
 	}
 }

@@ -14,8 +14,9 @@ type CreateOrgInput struct {
 }
 
 type CreateOrgResponse struct {
-	OrganizationID string `json:"organization_id"`
-	Name           string `json:"name"`
+	OrganizationID string    `json:"organization_id"`
+	Name           string    `json:"name"`
+	OwnerID        uuid.UUID `json:"owner_id"`
 }
 
 func CreateOrganizationHandler(store db.Store) http.HandlerFunc {
@@ -40,8 +41,9 @@ func CreateOrganizationHandler(store db.Store) http.HandlerFunc {
 
 		newOrgID := uuid.New()
 		org, err := store.CreateOrganization(r.Context(), db.CreateOrganizationParams{
-			ID:   newOrgID,
-			Name: input.Name,
+			ID:      newOrgID,
+			Name:    input.Name,
+			OwnerID: userIDUUID,
 		})
 		if err != nil {
 			http.Error(w, "Error creating organization", http.StatusInternalServerError)
@@ -63,6 +65,7 @@ func CreateOrganizationHandler(store db.Store) http.HandlerFunc {
 		resp := CreateOrgResponse{
 			OrganizationID: org.ID.String(),
 			Name:           org.Name,
+			OwnerID:        org.OwnerID,
 		}
 		w.WriteHeader(http.StatusCreated)
 		json.NewEncoder(w).Encode(resp)

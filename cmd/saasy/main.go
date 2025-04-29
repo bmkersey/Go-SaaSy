@@ -9,6 +9,7 @@ import (
 	"github.com/bmkersey/Go-SaaSy/internal/billing"
 	"github.com/bmkersey/Go-SaaSy/internal/config"
 	"github.com/bmkersey/Go-SaaSy/internal/db"
+	"github.com/bmkersey/Go-SaaSy/internal/email"
 	"github.com/bmkersey/Go-SaaSy/internal/orgs"
 	stripeclient "github.com/bmkersey/Go-SaaSy/internal/stripe"
 	"github.com/go-chi/chi/v5"
@@ -24,9 +25,10 @@ func main() {
 	if err != nil {
 		log.Fatal("Could not establish connection to DB", err)
 	}
-
+	defer conn.Close()
 	queries := db.New(conn)
 	store := db.NewStore(queries)
+	sender := email.NewEmailSender()
 
 	r := chi.NewRouter()
 
@@ -38,7 +40,9 @@ func main() {
 
 	r.Post("/api/register", auth.RegisterHandler(store))
 	r.Post("/api/login", auth.LoginHandler(store, cfg.JwtSecret))
-	r.Post("/api/billing/webhook", billing.WebhookHandler(store))
+	r.Post("/api/billing/webhook", billing.WebhookHandler(store, sender))
+	r.Post("/api/forgot-password", auth.ForgotPasswordHandler(store, sender))
+	r.Post("/api/reset-password", auth.ResetPasswordHandler(store))
 
 	r.Route("/api", func(r chi.Router) {
 
