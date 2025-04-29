@@ -46,3 +46,33 @@ func GetOrgID(r *http.Request) (string, bool) {
 	}
 	return id.String(), ok
 }
+
+func RequirePaidPlan(store db.Store) func(http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			orgID, ok := GetOrgID(r)
+			if !ok {
+				http.Error(w, "Organization not found", http.StatusUnauthorized)
+				return
+			}
+
+			orgUUID, err := uuid.Parse(orgID)
+			if err != nil {
+				http.Error(w, "Error parsing ID to UUID", http.StatusBadRequest)
+				return
+			}
+
+			org, err := store.GetOrganization(r.Context(), orgUUID)
+			if err != nil {
+				http.Error(w, "Could not find organization", http.StatusInternalServerError)
+				return
+			}
+
+			if !HasActivePlan(org) {
+				http.Error(w, "Subscription required", http.StatusPaymentRequired)
+			}
+
+			next.ServeHTTP(w, r)
+		})
+	}
+}

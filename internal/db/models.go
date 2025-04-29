@@ -19,6 +19,7 @@ type Organization struct {
 	StripeSubscriptionID sql.NullString `json:"stripe_subscription_id"`
 	Plan                 sql.NullString `json:"plan"`
 	BillingEmail         sql.NullString `json:"billing_email"`
+	IsPaid               bool           `json:"is_paid"`
 }
 
 type User struct {

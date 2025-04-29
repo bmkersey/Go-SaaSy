@@ -49,6 +49,14 @@ func main() {
 			r.Post("/checkout", billing.CreateCheckoutHandler())
 		})
 
+		r.Route("/premium", func(r chi.Router) {
+			r.Use(orgs.OrgMiddleware(store))
+			r.Use(orgs.RequirePaidPlan(store))
+
+			// r.Get("/exclusive", premiumHandler)
+			// r.Get("/analytics", analyticsHandler)
+		})
+
 		r.Route("/orgs", func(r chi.Router) {
 			r.Use(orgs.OrgMiddleware(store))
 			r.Get("/{id}/members", orgs.GetOrgMembers(store))

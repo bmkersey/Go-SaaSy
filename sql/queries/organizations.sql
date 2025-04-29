@@ -15,5 +15,6 @@ SET
   stripe_customer_id = $2,
   stripe_subscription_id = $3,
   plan = $4,
+  is_paid = $5,
   updated_at = NOW()
 WHERE id = $1;

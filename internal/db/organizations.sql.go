@@ -15,7 +15,7 @@ import (
 const createOrganization = `-- name: CreateOrganization :one
 INSERT INTO organizations (id, name)
 VALUES ($1, $2)
-RETURNING id, name, created_at, updated_at, stripe_customer_id, stripe_subscription_id, plan, billing_email
+RETURNING id, name, created_at, updated_at, stripe_customer_id, stripe_subscription_id, plan, billing_email, is_paid
 `
 
 type CreateOrganizationParams struct {
@@ -35,12 +35,13 @@ func (q *Queries) CreateOrganization(ctx context.Context, arg CreateOrganization
 		&i.StripeSubscriptionID,
 		&i.Plan,
 		&i.BillingEmail,
+		&i.IsPaid,
 	)
 	return i, err
 }
 
 const getOrganization = `-- name: GetOrganization :one
-SELECT id, name, created_at, updated_at, stripe_customer_id, stripe_subscription_id, plan, billing_email FROM organizations
+SELECT id, name, created_at, updated_at, stripe_customer_id, stripe_subscription_id, plan, billing_email, is_paid FROM organizations
 WHERE id = $1
 `
 
@@ -56,6 +57,7 @@ func (q *Queries) GetOrganization(ctx context.Context, id uuid.UUID) (Organizati
 		&i.StripeSubscriptionID,
 		&i.Plan,
 		&i.BillingEmail,
+		&i.IsPaid,
 	)
 	return i, err
 }
@@ -66,6 +68,7 @@ SET
   stripe_customer_id = $2,
   stripe_subscription_id = $3,
   plan = $4,
+  is_paid = $5,
   updated_at = NOW()
 WHERE id = $1
 `
@@ -75,6 +78,7 @@ type UpdateOrganizationBillingParams struct {
 	StripeCustomerID     sql.NullString `json:"stripe_customer_id"`
 	StripeSubscriptionID sql.NullString `json:"stripe_subscription_id"`
 	Plan                 sql.NullString `json:"plan"`
+	IsPaid               bool           `json:"is_paid"`
 }
 
 func (q *Queries) UpdateOrganizationBilling(ctx context.Context, arg UpdateOrganizationBillingParams) error {
@@ -83,6 +87,7 @@ func (q *Queries) UpdateOrganizationBilling(ctx context.Context, arg UpdateOrgan
 		arg.StripeCustomerID,
 		arg.StripeSubscriptionID,
 		arg.Plan,
+		arg.IsPaid,
 	)
 	return err
 }
