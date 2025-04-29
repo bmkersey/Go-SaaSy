@@ -30,6 +30,8 @@ func main() {
 
 	r := chi.NewRouter()
 
+	r.Handle("/assets/*", http.StripPrefix("/assets/", http.FileServer(http.Dir("./public/assets"))))
+
 	r.Get("/", func(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte("SaaSy is running 🚀 (via Chi)"))
 	})

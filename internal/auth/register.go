@@ -3,10 +3,12 @@ package auth
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 	"time"
 
 	"github.com/bmkersey/Go-SaaSy/internal/db"
+	"github.com/bmkersey/Go-SaaSy/internal/email"
 	"github.com/google/uuid"
 )
 
@@ -49,6 +51,20 @@ func RegisterHandler(store db.Store) http.HandlerFunc {
 			http.Error(w, fmt.Sprintf("Error creating user: %s\n", err), http.StatusBadRequest)
 			return
 		}
+
+		sender := email.NewEmailSender()
+
+		go func() {
+			data := struct {
+				Name string
+			}{
+				Name: "Test User",
+			}
+
+			if err := sender.SendTemplate(user.Email, "Welcome to SaaSy!", "welcome.html.tmpl", data); err != nil {
+				log.Printf("Failed to send welcome email to %s: %v", user.Email, err)
+			}
+		}()
 
 		resp := RegisterResponse{
 			ID:        user.ID.String(),
