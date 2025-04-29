@@ -12,9 +12,9 @@ import (
 
 	"github.com/bmkersey/Go-SaaSy/internal/db"
 	"github.com/google/uuid"
-	"github.com/stripe/stripe-go/v76"
-	stripeSession "github.com/stripe/stripe-go/v76/checkout/session"
-	stripeSubscription "github.com/stripe/stripe-go/v76/subscription"
+	"github.com/stripe/stripe-go/v82"
+	stripeSession "github.com/stripe/stripe-go/v82/checkout/session"
+	stripeSubscription "github.com/stripe/stripe-go/v82/subscription"
 )
 
 func WebhookHandler(store db.Store) http.HandlerFunc {
@@ -34,11 +34,6 @@ func WebhookHandler(store db.Store) http.HandlerFunc {
 			http.Error(w, "Webhook secret missing", http.StatusInternalServerError)
 			return
 		}
-		// event, err := webhook.ConstructEvent(payload, r.Header.Get("Stripe-Signature"), endpointSecret)
-		// if err != nil {
-		// 	http.Error(w, "Webhook verification failed", http.StatusBadRequest)
-		// 	return
-		// }
 
 		event := stripe.Event{}
 

@@ -1,8 +1,8 @@
 package stripeclient
 
 import (
-	stripe "github.com/stripe/stripe-go/v76"
-	"github.com/stripe/stripe-go/v76/checkout/session"
+	stripe "github.com/stripe/stripe-go/v82"
+	"github.com/stripe/stripe-go/v82/checkout/session"
 )
 
 func CreateCheckoutSeassion(orgID string, priceID string) (string, error) {
@@ -26,19 +26,6 @@ func CreateCheckoutSeassion(orgID string, priceID string) (string, error) {
 			},
 		},
 	}
-	// params := &stripe.CheckoutSessionParams{
-	// 	ClientReferenceID: stripe.String(orgID), // ✅ Important!
-	// 	Mode:              stripe.String(string(stripe.CheckoutSessionModeSubscription)),
-	// 	Customer:          stripe.String(orgID), // if you have it
-	// 	SuccessURL:        stripe.String("https://example.com/success"),
-	// 	CancelURL:         stripe.String("https://example.com/cancel"),
-	// 	LineItems: []*stripe.CheckoutSessionLineItemParams{
-	// 		{
-	// 			Price:    stripe.String(priceID),
-	// 			Quantity: stripe.Int64(1),
-	// 		},
-	// 	},
-	// }
 
 	params.AddExpand("line_items")
 
