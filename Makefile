@@ -23,7 +23,23 @@ migrate-down:
 # Build the API binary manually (local dev)
 build:
 	go build -o saasy ./cmd/saasy
+# Runs admin command in the docker container to create a user
+admin-create-user:
+	docker compose exec app go run cmd/admin/main.go create-user \
+		--name "$(name)" --email "$(email)" --password "$(password)"
+# Runs admin command in the docker container to create an org
+admin-create-org:
+	docker compose exec app go run cmd/admin/main.go create-org \
+		--name "$(name)" --owner-id "$(owner)"
+# Reset password without sending email
+admin-reset-password:
+	docker compose exec app go run cmd/admin/main.go reset-password \
+		--email "$(email)"
 
+# Reset password and send email
+admin-reset-password-send:
+	docker compose exec app go run cmd/admin/main.go reset-password \
+		--email "$(email)" --send
 # Run unit tests
 test:
 	go test ./...
