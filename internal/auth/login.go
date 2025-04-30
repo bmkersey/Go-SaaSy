@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/bmkersey/Go-SaaSy/internal/db"
+	httphelpers "github.com/bmkersey/Go-SaaSy/internal/httpHelpers"
 )
 
 type LoginInput struct {
@@ -17,24 +18,24 @@ func LoginHandler(store db.Store, jwtSecret string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var input LoginInput
 		if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
-			http.Error(w, "Invalid input", http.StatusBadRequest)
+			httphelpers.SendError(w, http.StatusBadRequest, err.Error())
 			return
 		}
 
 		user, err := store.GetUserByEmail(r.Context(), input.Email)
 		if err != nil {
-			http.Error(w, "Invalid email or password", http.StatusUnauthorized)
+			httphelpers.SendError(w, http.StatusUnauthorized, err.Error())
 			return
 		}
 
 		if err := CheckPassword(user.PasswordHash, input.Password); err != nil {
-			http.Error(w, "Invalid email or password", http.StatusUnauthorized)
+			httphelpers.SendError(w, http.StatusUnauthorized, "Invalid password/email")
 			return
 		}
 
 		token, err := GenerateJwt(user.ID.String(), jwtSecret, time.Hour*24)
 		if err != nil {
-			http.Error(w, "Failed to generate token", http.StatusInternalServerError)
+			httphelpers.SendError(w, http.StatusInternalServerError, err.Error())
 			return
 		}
 

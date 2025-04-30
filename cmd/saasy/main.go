@@ -13,6 +13,7 @@ import (
 	"github.com/bmkersey/Go-SaaSy/internal/orgs"
 	stripeclient "github.com/bmkersey/Go-SaaSy/internal/stripe"
 	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/cors"
 	_ "github.com/lib/pq"
 )
 
@@ -31,6 +32,14 @@ func main() {
 	sender := email.NewEmailSender()
 
 	r := chi.NewRouter()
+
+	r.Use(cors.Handler(cors.Options{
+		AllowedOrigins:   []string{"http://localhost:3000"},
+		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
+		AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type", "X-CSRF-Token"},
+		AllowCredentials: true,
+		MaxAge:           300,
+	}))
 
 	r.Handle("/assets/*", http.StripPrefix("/assets/", http.FileServer(http.Dir("./public/assets"))))
 

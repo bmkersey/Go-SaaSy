@@ -9,18 +9,13 @@ import (
 
 	"github.com/bmkersey/Go-SaaSy/internal/db"
 	"github.com/bmkersey/Go-SaaSy/internal/email"
+	httphelpers "github.com/bmkersey/Go-SaaSy/internal/httpHelpers"
 	"github.com/google/uuid"
 )
 
 type RegisterInput struct {
 	Email    string `json:"email"`
 	Password string `json:"password"`
-}
-
-type RegisterResponse struct {
-	ID        string    `json:"id"`
-	Email     string    `json:"email"`
-	CreatedAt time.Time `json:"created_at"`
 }
 
 func RegisterHandler(store db.Store) http.HandlerFunc {
@@ -52,6 +47,12 @@ func RegisterHandler(store db.Store) http.HandlerFunc {
 			return
 		}
 
+		token, err := GenerateJwt(user.ID.String(), "saasy", time.Hour*24)
+		if err != nil {
+			http.Error(w, "Failed to create token", http.StatusInternalServerError)
+			return
+		}
+
 		sender := email.NewEmailSender()
 
 		go func() {
@@ -66,13 +67,8 @@ func RegisterHandler(store db.Store) http.HandlerFunc {
 			}
 		}()
 
-		resp := RegisterResponse{
-			ID:        user.ID.String(),
-			Email:     user.Email,
-			CreatedAt: user.CreatedAt.Time,
-		}
-
-		w.WriteHeader(http.StatusCreated)
-		json.NewEncoder(w).Encode(resp)
+		httphelpers.RespondWithJSON(w, http.StatusCreated, map[string]string{
+			"token": token,
+		})
 	}
 }
