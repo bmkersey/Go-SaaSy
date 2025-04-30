@@ -9,9 +9,12 @@ import (
 )
 
 type Config struct {
-	DB        string
-	JwtSecret string
-	Port      string
+	DB                  string
+	JwtSecret           string
+	Port                string
+	StripeWebhookSecret string
+	AllowedPlans        map[string]string
+	PlanPriceIDs        map[string]string
 }
 
 func LoadConfig() Config {
@@ -22,9 +25,18 @@ func LoadConfig() Config {
 	}
 
 	cfg := Config{
-		DB:        getEnv("DB_URL", ""),
-		Port:      getEnv("PORT", "8080"),
-		JwtSecret: getEnv("JWT_SECRET", ""),
+		DB:                  getEnv("DB_URL", ""),
+		Port:                getEnv("PORT", "8080"),
+		JwtSecret:           getEnv("JWT_SECRET", ""),
+		StripeWebhookSecret: getEnv("STRIPE_WEBHOOK_SECRET", ""),
+		AllowedPlans: map[string]string{
+			getEnv("STRIPE_PRICE_ID_PRO", ""):      "pro",
+			getEnv("STRIPE_PRICE_ID_ULTIMATE", ""): "ultimate",
+		},
+		PlanPriceIDs: map[string]string{
+			"pro":      getEnv("STRIPE_PRICE_ID_PRO", ""),
+			"ultimate": getEnv("STRIPE_PRICE_ID_ULTIMATE", ""),
+		},
 	}
 
 	if cfg.DB == "" || cfg.JwtSecret == "" {

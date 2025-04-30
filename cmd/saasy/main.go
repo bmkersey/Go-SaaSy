@@ -52,7 +52,7 @@ func main() {
 		r.Post("/createorg", orgs.CreateOrganizationHandler(store))
 		r.Route("/billing", func(r chi.Router) {
 			r.Use(orgs.OrgMiddleware(store))
-			r.Post("/checkout", billing.CreateCheckoutHandler())
+			r.Post("/checkout", billing.CreateCheckoutHandler(cfg))
 		})
 
 		r.Route("/premium", func(r chi.Router) {

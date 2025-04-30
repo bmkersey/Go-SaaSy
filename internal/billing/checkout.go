@@ -2,10 +2,11 @@ package billing
 
 import (
 	"encoding/json"
+	"log"
 	"net/http"
-	"os"
 
 	"github.com/bmkersey/Go-SaaSy/internal/auth"
+	"github.com/bmkersey/Go-SaaSy/internal/config"
 	"github.com/bmkersey/Go-SaaSy/internal/orgs"
 	stripeclient "github.com/bmkersey/Go-SaaSy/internal/stripe"
 )
@@ -18,12 +19,7 @@ type CheckoutResponse struct {
 	URL string `json:"url"`
 }
 
-var allowedPlans = map[string]string{
-	"pro":      os.Getenv("STRIPE_PRICE_ID_PRO"),
-	"ultimate": os.Getenv("STRIPE_PRICE_ID_ULTIMATE"),
-}
-
-func CreateCheckoutHandler() http.HandlerFunc {
+func CreateCheckoutHandler(cfg config.Config) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		_, ok := auth.GetUserID(r)
 		if !ok {
@@ -44,11 +40,12 @@ func CreateCheckoutHandler() http.HandlerFunc {
 			return
 		}
 
-		priceID, ok := allowedPlans[req.Plan]
+		priceID, ok := cfg.PlanPriceIDs[req.Plan]
 		if !ok {
 			http.Error(w, "Invalid plan", http.StatusBadRequest)
 			return
 		}
+		log.Println("checkout req plan: " + req.Plan + "\ncheckout price id: " + priceID)
 
 		sessionURL, err := stripeclient.CreateCheckoutSeassion(orgID, priceID)
 		if err != nil {

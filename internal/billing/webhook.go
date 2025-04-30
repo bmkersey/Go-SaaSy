@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"os"
 
+	"github.com/bmkersey/Go-SaaSy/internal/config"
 	"github.com/bmkersey/Go-SaaSy/internal/db"
 	"github.com/bmkersey/Go-SaaSy/internal/email"
 	"github.com/google/uuid"
@@ -19,14 +20,10 @@ import (
 	stripeSubscription "github.com/stripe/stripe-go/v82/subscription"
 )
 
-var allowedPlansReversed = map[string]string{
-	os.Getenv("STRIPE_PRICE_ID_PRO"):      "pro",
-	os.Getenv("STRIPE_PRICE_ID_ULTIMATE"): "ultimate",
-}
-
 func WebhookHandler(store db.Store, sender *email.EmailSender) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		fmt.Println("Inside webhook handler")
+		cfg := config.LoadConfig()
 		const MaxBodyBytes = int64(65536)
 		r.Body = http.MaxBytesReader(w, r.Body, MaxBodyBytes)
 
@@ -71,9 +68,11 @@ func WebhookHandler(store db.Store, sender *email.EmailSender) http.HandlerFunc 
 			var priceID string
 			// unpack the line items?
 			if fullSession.LineItems != nil && len(fullSession.LineItems.Data) > 0 {
-				for _, lineItem := range fullSession.LineItems.Data {
-					priceID := lineItem.Price.ID
-					fmt.Println("Price ID:", priceID)
+				for i, lineItem := range fullSession.LineItems.Data {
+					if i == 0 {
+						priceID = lineItem.Price.ID
+						fmt.Println("Price ID:", priceID)
+					}
 				}
 			}
 
@@ -91,10 +90,17 @@ func WebhookHandler(store db.Store, sender *email.EmailSender) http.HandlerFunc 
 				http.Error(w, "Error parsing ID to UUID", http.StatusInternalServerError)
 				return
 			}
+			fmt.Println("---- DEBUG: using cfg.AllowedPlans map ----")
+			for k, v := range cfg.AllowedPlans {
+				fmt.Printf("Key: %s → Value: %s\n", k, v)
+			}
+			fmt.Printf("Looking up priceID: %s\n", priceID)
 
-			plan, ok := allowedPlansReversed[priceID]
+			plan, ok := cfg.AllowedPlans[priceID]
+			fmt.Printf("Resolved plan: %s (found: %v)\n", plan, ok)
+
 			if !ok {
-				plan = "basic" // fallback if priceID not found
+				plan = "basic"
 			}
 			fmt.Println(plan)
 			stripeCustomerID := ""
@@ -189,9 +195,9 @@ func WebhookHandler(store db.Store, sender *email.EmailSender) http.HandlerFunc 
 				priceID = subscription.Items.Data[0].Price.ID
 			}
 
-			plan, ok := allowedPlansReversed[priceID]
+			plan, ok := cfg.AllowedPlans[priceID]
 			if !ok {
-				plan = "basic" // fallback if priceID not found
+				plan = "basic"
 			}
 
 			err = store.UpdateOrganizationBilling(r.Context(), db.UpdateOrganizationBillingParams{
@@ -287,7 +293,7 @@ func WebhookHandler(store db.Store, sender *email.EmailSender) http.HandlerFunc 
 				return
 			}
 
-			plan, ok := allowedPlansReversed[priceID]
+			plan, ok := cfg.AllowedPlans[priceID]
 			if !ok {
 				plan = "basic" // fallback if priceID not found
 			}
