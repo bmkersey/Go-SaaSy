@@ -15,13 +15,23 @@ const UserIDKey ContextKey = "userID"
 func AuthMiddleware(jwtSecret string) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			authHeader := r.Header.Get("Authorization")
-			if authHeader == "" || !strings.HasPrefix(authHeader, "Bearer ") {
-				http.Error(w, "Missing or malformed authorization header", http.StatusUnauthorized)
-				return
+			var tokenString string
+
+			if cookie, err := r.Cookie("token"); err == nil {
+				tokenString = cookie.Value
 			}
 
-			tokenString := strings.TrimPrefix(authHeader, "Bearer ")
+			if tokenString == "" {
+				authHeader := r.Header.Get("Authorization")
+				if strings.HasPrefix(authHeader, "Bearer ") {
+					tokenString = strings.TrimPrefix(authHeader, "Bearer ")
+				}
+			}
+
+			if tokenString == "" {
+				http.Error(w, "Missing auth token", http.StatusUnauthorized)
+				return
+			}
 
 			token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
 				if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {

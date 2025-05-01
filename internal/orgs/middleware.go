@@ -11,7 +11,7 @@ import (
 
 type contextKey string
 
-const orgIDKey contextKey = "orgID"
+const OrgIDKey contextKey = "orgID"
 
 func OrgMiddleware(store db.Store) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
@@ -19,6 +19,7 @@ func OrgMiddleware(store db.Store) func(http.Handler) http.Handler {
 			userID, ok := auth.GetUserID(r)
 			if !ok {
 				http.Error(w, "Unauthorized", http.StatusUnauthorized)
+				return
 			}
 
 			userUUID, err := uuid.Parse(userID)
@@ -32,14 +33,14 @@ func OrgMiddleware(store db.Store) func(http.Handler) http.Handler {
 				return
 			}
 
-			ctx := context.WithValue(r.Context(), orgIDKey, user.OrganizationID.UUID)
+			ctx := context.WithValue(r.Context(), OrgIDKey, user.OrganizationID.UUID.String())
 			next.ServeHTTP(w, r.WithContext(ctx))
 		})
 	}
 }
 
 func GetOrgID(r *http.Request) (string, bool) {
-	val := r.Context().Value(orgIDKey)
+	val := r.Context().Value(OrgIDKey)
 	id, ok := val.(uuid.UUID)
 	if !ok {
 		return "", false
@@ -70,6 +71,37 @@ func RequirePaidPlan(store db.Store) func(http.Handler) http.Handler {
 
 			if !HasActivePlan(org) {
 				http.Error(w, "Subscription required", http.StatusPaymentRequired)
+			}
+
+			next.ServeHTTP(w, r)
+		})
+	}
+}
+
+func RequireOwner(store db.Store) func(http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			userID, ok := r.Context().Value(auth.UserIDKey).(string)
+			if !ok || userID == "" {
+				http.Error(w, "Missing user ID in context", http.StatusUnauthorized)
+				return
+			}
+
+			orgID, ok := r.Context().Value(OrgIDKey).(string)
+			if !ok || orgID == "" {
+				http.Error(w, "Missing org ID in context", http.StatusUnauthorized)
+				return
+			}
+
+			org, err := store.GetOrganization(r.Context(), uuid.MustParse(orgID))
+			if err != nil {
+				http.Error(w, "Could not fetch organization", http.StatusInternalServerError)
+				return
+			}
+
+			if org.OwnerID.String() != userID {
+				http.Error(w, "Not authorized — only the org owner can access this", http.StatusForbidden)
+				return
 			}
 
 			next.ServeHTTP(w, r)

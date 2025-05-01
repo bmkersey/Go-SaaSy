@@ -3,45 +3,47 @@ import { useRouter } from 'next/router'
 
 export default function Dashboard() {
   const [loading, setLoading] = useState(true)
-  const [token, setToken] = useState(null)
+  const [user, setUser] = useState(null)
   const router = useRouter()
 
-  // Helper to read token from cookies
-  function getCookie(name) {
-    const value = `; ${document.cookie}`
-    const parts = value.split(`; ${name}=`)
-    if (parts.length === 2) return parts.pop().split(';').shift()
-  }
-
   useEffect(() => {
-    const t = getCookie('token')
-    if (!t) {
-      router.push('/login')
-    } else {
-      setToken(t)
-      setLoading(false)
+    const fetchUser = async () => {
+      try {
+        const res = await fetch("http://localhost:8080/api/me", {
+          method: "GET",
+          credentials: "include", // 🔑 Send cookies
+        })
+
+        if (!res.ok) {
+          throw new Error("Unauthorized")
+        }
+
+        const data = await res.json()
+        setUser(data)
+        setLoading(false)
+      } catch (err) {
+        router.push("/login")
+      }
     }
+
+    fetchUser()
   }, [])
 
   if (loading) return <div className="p-4">Loading...</div>
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-start bg-gray-50">
+    <div className="min-h-screen text-black flex flex-col items-center justify-start bg-gray-50 p-4">
       <button
-  onClick={() => {
-    // Clear cookie by setting it to expire
-    document.cookie = 'token=; path=/; max-age=0'
-    router.push('/login')
-  }}
-  className="mt-6 bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700 self-end mr-10"
->
-  Log Out
-</button>
-      <h1 className="text-2xl font-bold text-black mb-2">Welcome to the Dashboard</h1>
-      <h2 className='text-black font-bold'>Auth is handled by cookies and tokens</h2>
-      <p className="text-sm text-gray-600 w-full overflow-x-auto px-10 whitespace-nowrap">
-  Your token: <code>{token}</code>
-</p>
+        onClick={() => {
+          document.cookie = 'token=; path=/; max-age=0'
+          router.push('/login')
+        }}
+        className="mt-6 bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700 self-end"
+      >
+        Log Out
+      </button>
+      <h1 className="text-2xl font-bold mb-2">Welcome, {user.email}</h1>
+      <p className="text-sm text-gray-600">User ID: <code>{user.id}</code></p>
     </div>
   )
 }

@@ -52,6 +52,11 @@ func main() {
 	r.Post("/api/billing/webhook", billing.WebhookHandler(store, sender))
 	r.Post("/api/forgot-password", auth.ForgotPasswordHandler(store, sender))
 	r.Post("/api/reset-password", auth.ResetPasswordHandler(store))
+	r.With(
+		auth.AuthMiddleware(cfg.JwtSecret),
+		orgs.OrgMiddleware(store),
+		orgs.RequireOwner(store),
+	).Get("/api/org/dashboard", orgs.OrgDashboardHandler(store))
 
 	r.Route("/api", func(r chi.Router) {
 
