@@ -5,6 +5,7 @@ import (
 	"log"
 	"net/http"
 
+	"github.com/bmkersey/Go-SaaSy/internal/admin"
 	"github.com/bmkersey/Go-SaaSy/internal/auth"
 	"github.com/bmkersey/Go-SaaSy/internal/billing"
 	"github.com/bmkersey/Go-SaaSy/internal/config"
@@ -57,6 +58,10 @@ func main() {
 		orgs.OrgMiddleware(store),
 		orgs.RequireOwner(store),
 	).Get("/api/org/dashboard", orgs.OrgDashboardHandler(store))
+	r.With(
+		auth.AuthMiddleware(cfg.JwtSecret),
+		auth.RequireAdmin(store),
+	).Get("/api/admin/overview", admin.AdminOverviewHandler(store))
 
 	r.Route("/api", func(r chi.Router) {
 

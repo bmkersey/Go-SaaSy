@@ -39,4 +39,5 @@ type User struct {
 	CreatedAt      sql.NullTime  `json:"created_at"`
 	UpdatedAt      sql.NullTime  `json:"updated_at"`
 	OrganizationID uuid.NullUUID `json:"organization_id"`
+	IsAdmin        bool          `json:"is_admin"`
 }

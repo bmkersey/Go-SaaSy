@@ -5,7 +5,9 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/bmkersey/Go-SaaSy/internal/db"
 	"github.com/golang-jwt/jwt"
+	"github.com/google/uuid"
 )
 
 type ContextKey string
@@ -60,4 +62,13 @@ func AuthMiddleware(jwtSecret string) func(http.Handler) http.Handler {
 			next.ServeHTTP(w, r.WithContext(ctx))
 		})
 	}
+}
+
+func IsAdmin(r *http.Request, store db.Store) bool {
+	userID, ok := GetUserID(r)
+	if !ok {
+		return false
+	}
+	user, err := store.GetUserByID(r.Context(), uuid.MustParse(userID))
+	return err == nil && user.IsAdmin
 }

@@ -40,6 +40,8 @@ admin-reset-password:
 admin-reset-password-send:
 	docker compose exec app go run cmd/admin/main.go reset-password \
 		--email "$(email)" --send
+make-admin:
+	docker compose exec app go run cmd/admin/main.go make-admin --email $(EMAIL)
 # Run unit tests
 test:
 	go test ./...

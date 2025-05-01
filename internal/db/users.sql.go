@@ -13,23 +13,30 @@ import (
 )
 
 const createUser = `-- name: CreateUser :one
-INSERT INTO users (id, email, password_hash)
+INSERT INTO users (id, email, password_hash, is_admin)
 VALUES (
   $1,
   $2,
-  $3
+  $3,
+  $4
 )
-RETURNING id, email, password_hash, created_at, updated_at, organization_id
+RETURNING id, email, password_hash, created_at, updated_at, organization_id, is_admin
 `
 
 type CreateUserParams struct {
 	ID           uuid.UUID `json:"id"`
 	Email        string    `json:"email"`
 	PasswordHash string    `json:"password_hash"`
+	IsAdmin      bool      `json:"is_admin"`
 }
 
 func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, error) {
-	row := q.queryRow(ctx, q.createUserStmt, createUser, arg.ID, arg.Email, arg.PasswordHash)
+	row := q.queryRow(ctx, q.createUserStmt, createUser,
+		arg.ID,
+		arg.Email,
+		arg.PasswordHash,
+		arg.IsAdmin,
+	)
 	var i User
 	err := row.Scan(
 		&i.ID,
@@ -38,6 +45,7 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, e
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.OrganizationID,
+		&i.IsAdmin,
 	)
 	return i, err
 }
@@ -77,7 +85,7 @@ func (q *Queries) GetOrgMembers(ctx context.Context, organizationID uuid.NullUUI
 }
 
 const getUserByEmail = `-- name: GetUserByEmail :one
-SELECT id, email, password_hash, created_at, updated_at, organization_id FROM users
+SELECT id, email, password_hash, created_at, updated_at, organization_id, is_admin FROM users
 WHERE email = $1
 `
 
@@ -91,12 +99,13 @@ func (q *Queries) GetUserByEmail(ctx context.Context, email string) (User, error
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.OrganizationID,
+		&i.IsAdmin,
 	)
 	return i, err
 }
 
 const getUserByID = `-- name: GetUserByID :one
-SELECT id, email, password_hash, created_at, updated_at, organization_id FROM users
+SELECT id, email, password_hash, created_at, updated_at, organization_id, is_admin FROM users
 where id = $1
 `
 
@@ -110,6 +119,7 @@ func (q *Queries) GetUserByID(ctx context.Context, id uuid.UUID) (User, error) {
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.OrganizationID,
+		&i.IsAdmin,
 	)
 	return i, err
 }

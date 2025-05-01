@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/router'
+import Link from 'next/link'
 
 export default function Dashboard() {
   const [loading, setLoading] = useState(true)
@@ -44,6 +45,11 @@ export default function Dashboard() {
       </button>
       <h1 className="text-2xl font-bold mb-2">Welcome, {user.email}</h1>
       <p className="text-sm text-gray-600">User ID: <code>{user.id}</code></p>
+      {user.is_admin && (
+        <Link href="/admindashboard" className="text-blue-600 underline">
+          Admin Dashboard
+        </Link>
+      )}
     </div>
   )
 }

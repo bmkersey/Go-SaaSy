@@ -9,8 +9,9 @@ import (
 )
 
 type MeResponse struct {
-	ID    string `json:"id"`
-	Email string `json:"email"`
+	ID      string `json:"id"`
+	Email   string `json:"email"`
+	IsAdmin bool   `json:"is_admin"`
 }
 
 func MeHandler(store db.Store) http.HandlerFunc {
@@ -34,8 +35,9 @@ func MeHandler(store db.Store) http.HandlerFunc {
 		}
 
 		resp := MeResponse{
-			ID:    user.ID.String(),
-			Email: user.Email,
+			ID:      user.ID.String(),
+			Email:   user.Email,
+			IsAdmin: user.IsAdmin,
 		}
 
 		w.Header().Set("Content-Type", "application/json")

@@ -51,6 +51,15 @@ func Prepare(ctx context.Context, db DBTX) (*Queries, error) {
 	if q.getUserByIDStmt, err = db.PrepareContext(ctx, getUserByID); err != nil {
 		return nil, fmt.Errorf("error preparing query GetUserByID: %w", err)
 	}
+	if q.listAllUsersStmt, err = db.PrepareContext(ctx, listAllUsers); err != nil {
+		return nil, fmt.Errorf("error preparing query ListAllUsers: %w", err)
+	}
+	if q.listOrganizationsStmt, err = db.PrepareContext(ctx, listOrganizations); err != nil {
+		return nil, fmt.Errorf("error preparing query ListOrganizations: %w", err)
+	}
+	if q.setUserAdminStmt, err = db.PrepareContext(ctx, setUserAdmin); err != nil {
+		return nil, fmt.Errorf("error preparing query SetUserAdmin: %w", err)
+	}
 	if q.updateOrganizationBillingStmt, err = db.PrepareContext(ctx, updateOrganizationBilling); err != nil {
 		return nil, fmt.Errorf("error preparing query UpdateOrganizationBilling: %w", err)
 	}
@@ -108,6 +117,21 @@ func (q *Queries) Close() error {
 	if q.getUserByIDStmt != nil {
 		if cerr := q.getUserByIDStmt.Close(); cerr != nil {
 			err = fmt.Errorf("error closing getUserByIDStmt: %w", cerr)
+		}
+	}
+	if q.listAllUsersStmt != nil {
+		if cerr := q.listAllUsersStmt.Close(); cerr != nil {
+			err = fmt.Errorf("error closing listAllUsersStmt: %w", cerr)
+		}
+	}
+	if q.listOrganizationsStmt != nil {
+		if cerr := q.listOrganizationsStmt.Close(); cerr != nil {
+			err = fmt.Errorf("error closing listOrganizationsStmt: %w", cerr)
+		}
+	}
+	if q.setUserAdminStmt != nil {
+		if cerr := q.setUserAdminStmt.Close(); cerr != nil {
+			err = fmt.Errorf("error closing setUserAdminStmt: %w", cerr)
 		}
 	}
 	if q.updateOrganizationBillingStmt != nil {
@@ -173,6 +197,9 @@ type Queries struct {
 	getPasswordResetByTokenStmt   *sql.Stmt
 	getUserByEmailStmt            *sql.Stmt
 	getUserByIDStmt               *sql.Stmt
+	listAllUsersStmt              *sql.Stmt
+	listOrganizationsStmt         *sql.Stmt
+	setUserAdminStmt              *sql.Stmt
 	updateOrganizationBillingStmt *sql.Stmt
 	updateUserOrgStmt             *sql.Stmt
 	updateUserPasswordStmt        *sql.Stmt
@@ -191,6 +218,9 @@ func (q *Queries) WithTx(tx *sql.Tx) *Queries {
 		getPasswordResetByTokenStmt:   q.getPasswordResetByTokenStmt,
 		getUserByEmailStmt:            q.getUserByEmailStmt,
 		getUserByIDStmt:               q.getUserByIDStmt,
+		listAllUsersStmt:              q.listAllUsersStmt,
+		listOrganizationsStmt:         q.listOrganizationsStmt,
+		setUserAdminStmt:              q.setUserAdminStmt,
 		updateOrganizationBillingStmt: q.updateOrganizationBillingStmt,
 		updateUserOrgStmt:             q.updateUserOrgStmt,
 		updateUserPasswordStmt:        q.updateUserPasswordStmt,

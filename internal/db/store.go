@@ -20,6 +20,9 @@ type Store interface {
 	GetPasswordResetByToken(ctx context.Context, token string) (PasswordReset, error)
 	DeletePasswordReset(ctx context.Context, token string) error
 	UpdateUserPassword(ctx context.Context, arg UpdateUserPasswordParams) error
+	ListAllUsers(ctx context.Context) ([]ListAllUsersRow, error)
+	ListOrganizations(ctx context.Context) ([]ListOrganizationsRow, error)
+	SetUserAdmin(ctx context.Context, email string) error
 }
 
 // SQLStore implements the Store interface using sqlc-generated Queries.

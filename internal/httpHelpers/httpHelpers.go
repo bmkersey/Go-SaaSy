@@ -1,6 +1,7 @@
 package httphelpers
 
 import (
+	"database/sql"
 	"encoding/json"
 	"log"
 	"net/http"
@@ -35,4 +36,11 @@ func SendError(w http.ResponseWriter, status int, errorMsg string) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
 	w.Write(data)
+}
+
+func SafeString(ns sql.NullString) string {
+	if ns.Valid {
+		return ns.String
+	}
+	return ""
 }

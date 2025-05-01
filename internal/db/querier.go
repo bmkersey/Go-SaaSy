@@ -20,6 +20,9 @@ type Querier interface {
 	GetPasswordResetByToken(ctx context.Context, token string) (PasswordReset, error)
 	GetUserByEmail(ctx context.Context, email string) (User, error)
 	GetUserByID(ctx context.Context, id uuid.UUID) (User, error)
+	ListAllUsers(ctx context.Context) ([]ListAllUsersRow, error)
+	ListOrganizations(ctx context.Context) ([]ListOrganizationsRow, error)
+	SetUserAdmin(ctx context.Context, email string) error
 	UpdateOrganizationBilling(ctx context.Context, arg UpdateOrganizationBillingParams) error
 	UpdateUserOrg(ctx context.Context, arg UpdateUserOrgParams) error
 	UpdateUserPassword(ctx context.Context, arg UpdateUserPasswordParams) error
