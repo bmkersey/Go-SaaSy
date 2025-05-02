@@ -55,6 +55,43 @@ func (q *Queries) ListAllUsers(ctx context.Context) ([]ListAllUsersRow, error) {
 	return items, nil
 }
 
+const listInvitesForOrg = `-- name: ListInvitesForOrg :many
+SELECT id, org_id, token, email, used_at, created_at, expires_at FROM invites
+WHERE org_id = $1
+ORDER BY created_at DESC
+`
+
+func (q *Queries) ListInvitesForOrg(ctx context.Context, orgID uuid.UUID) ([]Invite, error) {
+	rows, err := q.query(ctx, q.listInvitesForOrgStmt, listInvitesForOrg, orgID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Invite
+	for rows.Next() {
+		var i Invite
+		if err := rows.Scan(
+			&i.ID,
+			&i.OrgID,
+			&i.Token,
+			&i.Email,
+			&i.UsedAt,
+			&i.CreatedAt,
+			&i.ExpiresAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listOrganizations = `-- name: ListOrganizations :many
 SELECT id, name, owner_id, plan, billing_email, is_paid
 FROM organizations

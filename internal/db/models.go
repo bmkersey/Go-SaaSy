@@ -11,6 +11,16 @@ import (
 	"github.com/google/uuid"
 )
 
+type Invite struct {
+	ID        uuid.UUID    `json:"id"`
+	OrgID     uuid.UUID    `json:"org_id"`
+	Token     string       `json:"token"`
+	Email     string       `json:"email"`
+	UsedAt    sql.NullTime `json:"used_at"`
+	CreatedAt time.Time    `json:"created_at"`
+	ExpiresAt time.Time    `json:"expires_at"`
+}
+
 type Organization struct {
 	ID                   uuid.UUID      `json:"id"`
 	Name                 string         `json:"name"`

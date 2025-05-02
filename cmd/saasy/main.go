@@ -62,13 +62,17 @@ func main() {
 		auth.AuthMiddleware(cfg.JwtSecret),
 		auth.RequireAdmin(store),
 	).Get("/api/admin/overview", admin.AdminOverviewHandler(store))
+	r.Get("/api/invite/validate", orgs.ValidateInviteHandler(store))
 
 	r.Route("/api", func(r chi.Router) {
-
 		r.Use(auth.AuthMiddleware(cfg.JwtSecret))
-
+		r.With(
+			orgs.OrgMiddleware(store),
+			orgs.RequireOwner(store),
+		).Post("/invites", orgs.CreateInviteHandler(store))
 		r.Get("/me", auth.MeHandler(store))
 		r.Post("/createorg", orgs.CreateOrganizationHandler(store))
+		r.Post("/invite/accept", orgs.AcceptInviteHandler(store))
 		r.Route("/billing", func(r chi.Router) {
 			r.Use(orgs.OrgMiddleware(store))
 			r.Post("/checkout", billing.CreateCheckoutHandler(cfg))

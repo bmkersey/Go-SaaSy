@@ -23,6 +23,11 @@ type Store interface {
 	ListAllUsers(ctx context.Context) ([]ListAllUsersRow, error)
 	ListOrganizations(ctx context.Context) ([]ListOrganizationsRow, error)
 	SetUserAdmin(ctx context.Context, email string) error
+	CreateInvite(ctx context.Context, arg CreateInviteParams) error
+	GetInviteByToken(ctx context.Context, token string) (Invite, error)
+	ListInvitesForOrg(ctx context.Context, orgID uuid.UUID) ([]Invite, error)
+	MarkInviteUsed(ctx context.Context, id uuid.UUID) error
+	DeleteInvite(ctx context.Context, id uuid.UUID) error
 }
 
 // SQLStore implements the Store interface using sqlc-generated Queries.

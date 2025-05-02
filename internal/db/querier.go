@@ -11,17 +11,22 @@ import (
 )
 
 type Querier interface {
+	CreateInvite(ctx context.Context, arg CreateInviteParams) error
 	CreateOrganization(ctx context.Context, arg CreateOrganizationParams) (CreateOrganizationRow, error)
 	CreatePasswordReset(ctx context.Context, arg CreatePasswordResetParams) error
 	CreateUser(ctx context.Context, arg CreateUserParams) (User, error)
+	DeleteInvite(ctx context.Context, id uuid.UUID) error
 	DeletePasswordReset(ctx context.Context, token string) error
+	GetInviteByToken(ctx context.Context, token string) (Invite, error)
 	GetOrgMembers(ctx context.Context, organizationID uuid.NullUUID) ([]GetOrgMembersRow, error)
 	GetOrganization(ctx context.Context, id uuid.UUID) (Organization, error)
 	GetPasswordResetByToken(ctx context.Context, token string) (PasswordReset, error)
 	GetUserByEmail(ctx context.Context, email string) (User, error)
 	GetUserByID(ctx context.Context, id uuid.UUID) (User, error)
 	ListAllUsers(ctx context.Context) ([]ListAllUsersRow, error)
+	ListInvitesForOrg(ctx context.Context, orgID uuid.UUID) ([]Invite, error)
 	ListOrganizations(ctx context.Context) ([]ListOrganizationsRow, error)
+	MarkInviteUsed(ctx context.Context, id uuid.UUID) error
 	SetUserAdmin(ctx context.Context, email string) error
 	UpdateOrganizationBilling(ctx context.Context, arg UpdateOrganizationBillingParams) error
 	UpdateUserOrg(ctx context.Context, arg UpdateUserOrgParams) error

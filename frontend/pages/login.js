@@ -8,6 +8,8 @@ export default function login() {
   const [password, setPassword] = useState("")
   const [error, setError] = useState(null)
   const router = useRouter()
+  const redirect = router.query.redirect || "/dashboard"
+
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -30,7 +32,7 @@ export default function login() {
 
       const { token } = await res.json()
       document.cookie = `token=${token}; path=/; max-age=86400; samesite=lax`
-      router.push("/dashboard")
+      router.push(redirect)
     } catch (err) {
       setError(err.message)
     }

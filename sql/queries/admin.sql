@@ -14,3 +14,9 @@ ORDER BY created_at DESC;
 UPDATE users
 SET is_admin = true
 WHERE email = $1;
+
+
+-- name: ListInvitesForOrg :many
+SELECT * FROM invites
+WHERE org_id = $1
+ORDER BY created_at DESC;

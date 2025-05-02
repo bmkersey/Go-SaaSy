@@ -24,6 +24,9 @@ func New(db DBTX) *Queries {
 func Prepare(ctx context.Context, db DBTX) (*Queries, error) {
 	q := Queries{db: db}
 	var err error
+	if q.createInviteStmt, err = db.PrepareContext(ctx, createInvite); err != nil {
+		return nil, fmt.Errorf("error preparing query CreateInvite: %w", err)
+	}
 	if q.createOrganizationStmt, err = db.PrepareContext(ctx, createOrganization); err != nil {
 		return nil, fmt.Errorf("error preparing query CreateOrganization: %w", err)
 	}
@@ -33,8 +36,14 @@ func Prepare(ctx context.Context, db DBTX) (*Queries, error) {
 	if q.createUserStmt, err = db.PrepareContext(ctx, createUser); err != nil {
 		return nil, fmt.Errorf("error preparing query CreateUser: %w", err)
 	}
+	if q.deleteInviteStmt, err = db.PrepareContext(ctx, deleteInvite); err != nil {
+		return nil, fmt.Errorf("error preparing query DeleteInvite: %w", err)
+	}
 	if q.deletePasswordResetStmt, err = db.PrepareContext(ctx, deletePasswordReset); err != nil {
 		return nil, fmt.Errorf("error preparing query DeletePasswordReset: %w", err)
+	}
+	if q.getInviteByTokenStmt, err = db.PrepareContext(ctx, getInviteByToken); err != nil {
+		return nil, fmt.Errorf("error preparing query GetInviteByToken: %w", err)
 	}
 	if q.getOrgMembersStmt, err = db.PrepareContext(ctx, getOrgMembers); err != nil {
 		return nil, fmt.Errorf("error preparing query GetOrgMembers: %w", err)
@@ -54,8 +63,14 @@ func Prepare(ctx context.Context, db DBTX) (*Queries, error) {
 	if q.listAllUsersStmt, err = db.PrepareContext(ctx, listAllUsers); err != nil {
 		return nil, fmt.Errorf("error preparing query ListAllUsers: %w", err)
 	}
+	if q.listInvitesForOrgStmt, err = db.PrepareContext(ctx, listInvitesForOrg); err != nil {
+		return nil, fmt.Errorf("error preparing query ListInvitesForOrg: %w", err)
+	}
 	if q.listOrganizationsStmt, err = db.PrepareContext(ctx, listOrganizations); err != nil {
 		return nil, fmt.Errorf("error preparing query ListOrganizations: %w", err)
+	}
+	if q.markInviteUsedStmt, err = db.PrepareContext(ctx, markInviteUsed); err != nil {
+		return nil, fmt.Errorf("error preparing query MarkInviteUsed: %w", err)
 	}
 	if q.setUserAdminStmt, err = db.PrepareContext(ctx, setUserAdmin); err != nil {
 		return nil, fmt.Errorf("error preparing query SetUserAdmin: %w", err)
@@ -74,6 +89,11 @@ func Prepare(ctx context.Context, db DBTX) (*Queries, error) {
 
 func (q *Queries) Close() error {
 	var err error
+	if q.createInviteStmt != nil {
+		if cerr := q.createInviteStmt.Close(); cerr != nil {
+			err = fmt.Errorf("error closing createInviteStmt: %w", cerr)
+		}
+	}
 	if q.createOrganizationStmt != nil {
 		if cerr := q.createOrganizationStmt.Close(); cerr != nil {
 			err = fmt.Errorf("error closing createOrganizationStmt: %w", cerr)
@@ -89,9 +109,19 @@ func (q *Queries) Close() error {
 			err = fmt.Errorf("error closing createUserStmt: %w", cerr)
 		}
 	}
+	if q.deleteInviteStmt != nil {
+		if cerr := q.deleteInviteStmt.Close(); cerr != nil {
+			err = fmt.Errorf("error closing deleteInviteStmt: %w", cerr)
+		}
+	}
 	if q.deletePasswordResetStmt != nil {
 		if cerr := q.deletePasswordResetStmt.Close(); cerr != nil {
 			err = fmt.Errorf("error closing deletePasswordResetStmt: %w", cerr)
+		}
+	}
+	if q.getInviteByTokenStmt != nil {
+		if cerr := q.getInviteByTokenStmt.Close(); cerr != nil {
+			err = fmt.Errorf("error closing getInviteByTokenStmt: %w", cerr)
 		}
 	}
 	if q.getOrgMembersStmt != nil {
@@ -124,9 +154,19 @@ func (q *Queries) Close() error {
 			err = fmt.Errorf("error closing listAllUsersStmt: %w", cerr)
 		}
 	}
+	if q.listInvitesForOrgStmt != nil {
+		if cerr := q.listInvitesForOrgStmt.Close(); cerr != nil {
+			err = fmt.Errorf("error closing listInvitesForOrgStmt: %w", cerr)
+		}
+	}
 	if q.listOrganizationsStmt != nil {
 		if cerr := q.listOrganizationsStmt.Close(); cerr != nil {
 			err = fmt.Errorf("error closing listOrganizationsStmt: %w", cerr)
+		}
+	}
+	if q.markInviteUsedStmt != nil {
+		if cerr := q.markInviteUsedStmt.Close(); cerr != nil {
+			err = fmt.Errorf("error closing markInviteUsedStmt: %w", cerr)
 		}
 	}
 	if q.setUserAdminStmt != nil {
@@ -188,17 +228,22 @@ func (q *Queries) queryRow(ctx context.Context, stmt *sql.Stmt, query string, ar
 type Queries struct {
 	db                            DBTX
 	tx                            *sql.Tx
+	createInviteStmt              *sql.Stmt
 	createOrganizationStmt        *sql.Stmt
 	createPasswordResetStmt       *sql.Stmt
 	createUserStmt                *sql.Stmt
+	deleteInviteStmt              *sql.Stmt
 	deletePasswordResetStmt       *sql.Stmt
+	getInviteByTokenStmt          *sql.Stmt
 	getOrgMembersStmt             *sql.Stmt
 	getOrganizationStmt           *sql.Stmt
 	getPasswordResetByTokenStmt   *sql.Stmt
 	getUserByEmailStmt            *sql.Stmt
 	getUserByIDStmt               *sql.Stmt
 	listAllUsersStmt              *sql.Stmt
+	listInvitesForOrgStmt         *sql.Stmt
 	listOrganizationsStmt         *sql.Stmt
+	markInviteUsedStmt            *sql.Stmt
 	setUserAdminStmt              *sql.Stmt
 	updateOrganizationBillingStmt *sql.Stmt
 	updateUserOrgStmt             *sql.Stmt
@@ -209,17 +254,22 @@ func (q *Queries) WithTx(tx *sql.Tx) *Queries {
 	return &Queries{
 		db:                            tx,
 		tx:                            tx,
+		createInviteStmt:              q.createInviteStmt,
 		createOrganizationStmt:        q.createOrganizationStmt,
 		createPasswordResetStmt:       q.createPasswordResetStmt,
 		createUserStmt:                q.createUserStmt,
+		deleteInviteStmt:              q.deleteInviteStmt,
 		deletePasswordResetStmt:       q.deletePasswordResetStmt,
+		getInviteByTokenStmt:          q.getInviteByTokenStmt,
 		getOrgMembersStmt:             q.getOrgMembersStmt,
 		getOrganizationStmt:           q.getOrganizationStmt,
 		getPasswordResetByTokenStmt:   q.getPasswordResetByTokenStmt,
 		getUserByEmailStmt:            q.getUserByEmailStmt,
 		getUserByIDStmt:               q.getUserByIDStmt,
 		listAllUsersStmt:              q.listAllUsersStmt,
+		listInvitesForOrgStmt:         q.listInvitesForOrgStmt,
 		listOrganizationsStmt:         q.listOrganizationsStmt,
+		markInviteUsedStmt:            q.markInviteUsedStmt,
 		setUserAdminStmt:              q.setUserAdminStmt,
 		updateOrganizationBillingStmt: q.updateOrganizationBillingStmt,
 		updateUserOrgStmt:             q.updateUserOrgStmt,
