@@ -84,7 +84,7 @@
   Please visit [https://opensource.org/licenses/MIT](https://opensource.org/licenses/MIT) to learn more.
   
 
-  ## Contribution
+  ## Contributing
 
   Sole contributor: [bmkersey](https://github.com/bmkersey)  
   Want to fork and build your own SaaS on top? Go for it — MIT license.
